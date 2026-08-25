@@ -563,7 +563,7 @@ export default function StyleguidePage() {
               <input
                 type="text"
                 placeholder="how shall we greet you"
-                className="font-poetic text-ink placeholder:text-ink-soft/70 focus:border-ink duration-quick ease-exhale mt-3 w-full border-0 border-b border-rule bg-transparent pb-3 text-lg italic transition-colors outline-none"
+                className="font-poetic text-ink placeholder:text-ink-soft/70 focus:border-ink duration-quick ease-exhale mt-3 w-full border-0 border-b border-ink-soft bg-transparent pb-3 text-lg italic transition-colors outline-none"
               />
             </label>
 
@@ -572,7 +572,7 @@ export default function StyleguidePage() {
               <input
                 type="email"
                 placeholder="you@example.com"
-                className="font-poetic text-ink placeholder:text-ink-soft/70 focus:border-ink duration-quick ease-exhale mt-3 w-full border-0 border-b border-rule bg-transparent pb-3 text-lg italic transition-colors outline-none"
+                className="font-poetic text-ink placeholder:text-ink-soft/70 focus:border-ink duration-quick ease-exhale mt-3 w-full border-0 border-b border-ink-soft bg-transparent pb-3 text-lg italic transition-colors outline-none"
               />
             </label>
           </div>
