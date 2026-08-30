@@ -54,6 +54,8 @@ export default function BookPage() {
                 {bookingReady ? (
                   <a
                     href={site.bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="label-caps bg-primary text-primary-foreground shadow-rest hover:shadow-lift rounded-pill duration-quick ease-exhale mt-6 block px-6 py-4 text-center transition-all hover:-translate-y-0.5"
                   >
                     Choose a time
@@ -119,8 +121,8 @@ export default function BookPage() {
                     "If not, we cleanse at the table. It costs us five minutes and nothing else.",
                   ],
                   [
-                    "Buccal release happens inside the mouth",
-                    "With gloves. If you would rather skip it, say so — the session still works.",
+                    "The work starts below the jaw",
+                    "Neck, trapezius, décolleté — that is where the face actually drains. An open or loose neckline helps.",
                   ],
                   [
                     "Give yourself somewhere soft to go after",
@@ -169,7 +171,16 @@ export default function BookPage() {
               >
                 Write to us
               </a>
-            ) : null}
+            ) : (
+              <a
+                href={site.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="label-caps text-ink border-rule rounded-pill duration-quick ease-exhale hover:bg-surface-sunken border px-8 py-4 transition-colors"
+              >
+                {site.instagramHandle}
+              </a>
+            )}
           </div>
         </section>
       </div>

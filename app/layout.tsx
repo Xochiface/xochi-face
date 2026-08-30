@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     template: "%s · Xochi Face",
   },
   description:
-    "Lymphatic drainage, buccal release, gua sha — and a long, quiet moment with yourself. By appointment in Austin, Texas.",
+    "Manual lymphatic drainage and facial sculpting — and a long, quiet moment with yourself. By appointment in Austin, Texas.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

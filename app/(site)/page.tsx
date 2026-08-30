@@ -4,7 +4,15 @@ import Link from "next/link";
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
 import { photos } from "@/content/photos";
-import { anatomy, etymology, letter, services, site, voice } from "@/content/site";
+import {
+  anatomy,
+  etymology,
+  letter,
+  philosophy,
+  services,
+  site,
+  voice,
+} from "@/content/site";
 
 export default function HomePage() {
   return (
@@ -40,7 +48,7 @@ export default function HomePage() {
             </p>
             <h1 className="text-display text-ink mt-6">{voice.bloom}</h1>
             <p className="text-lead text-ink-muted mt-8 max-w-xl italic">
-              Lymphatic drainage, buccal release, gua sha — and a long, quiet
+              Manual lymphatic drainage and facial sculpting — and a long, quiet
               moment with yourself.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-5">
@@ -75,8 +83,8 @@ export default function HomePage() {
             {etymology.pronunciation} · {etymology.language}
           </p>
           <h2 className="text-title text-ink mt-10">{etymology.meaning}</h2>
-          <p className="text-lead text-ink-muted mx-auto mt-8 max-w-xl italic">
-            {etymology.gloss}
+          <p className="text-lead text-ink-muted mx-auto mt-8 max-w-2xl italic">
+            {philosophy.mission}
           </p>
 
           <div className="text-rule mx-auto mt-16 max-w-xs">
@@ -117,10 +125,9 @@ export default function HomePage() {
         <section className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-36">
           <header className="mb-16 max-w-2xl">
             <p className="label-caps text-ink-soft">The practice</p>
-            <h2 className="text-title text-ink mt-5">{voice.softness}</h2>
+            <h2 className="text-title text-ink mt-5">{voice.returning}</h2>
             <p className="text-lead text-ink-muted mt-6 italic">
-              Three ways to come to the table. The whole arc, a shorter season,
-              or a rhythm you keep.
+              {philosophy.who}
             </p>
           </header>
 

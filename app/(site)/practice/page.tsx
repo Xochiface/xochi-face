@@ -4,12 +4,12 @@ import Link from "next/link";
 
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
 import { photos } from "@/content/photos";
-import { services, site, voice } from "@/content/site";
+import { benefits, services, site, voice } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "The practice",
   description:
-    "Lymphatic drainage, buccal release, and gua sha. Three ways to come to the table, in Austin, Texas.",
+    "Manual lymphatic drainage and facial sculpting. Three ways to come to the table, in Austin, Texas.",
 };
 
 export default function PracticePage() {
@@ -22,8 +22,8 @@ export default function PracticePage() {
             {voice.softness}
           </h1>
           <p className="text-lead text-ink-muted mt-8 max-w-xl italic">
-            Three ways to come to the table. The whole arc, a shorter season, or
-            a rhythm you keep.
+            Three ways to come to the table. The full hour, a shorter season, or
+            your first visit.
           </p>
         </div>
       </header>
@@ -82,6 +82,32 @@ export default function PracticePage() {
           </section>
         ))}
 
+        {/* What the work does — Nicole's five, in her own order ----------- */}
+        <section className="bg-surface-sunken border-t border-rule/40">
+          <div className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-32">
+            <header className="mb-16 max-w-2xl">
+              <p className="label-caps text-ink-soft">What it does</p>
+              <h2 className="text-title text-ink mt-5">{voice.tend}</h2>
+            </header>
+
+            <ul className="grid gap-x-12 gap-y-10 md:grid-cols-2 lg:grid-cols-3">
+              {benefits.map((b) => (
+                <li key={b.title}>
+                  <span className="text-accent-sage">
+                    <Ornament name={b.ornament} size={30} />
+                  </span>
+                  <h3 className="font-display text-ink mt-5 text-xl font-[350]">
+                    {b.title}
+                  </h3>
+                  <p className="text-body text-ink-muted mt-3 italic">
+                    {b.body}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         {/* What happens at the table -------------------------------------- */}
         <section className="night bg-surface text-ink">
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-32">
@@ -104,8 +130,8 @@ export default function PracticePage() {
                 jaw, the cheeks, the small muscles around the eyes.
               </p>
               <p className="text-body text-ink-muted mt-5 italic">
-                Buccal release works from inside the mouth, with gloves, where
-                the jaw holds what it has been holding. It is slower than it
+                Then the sculpting, and the scalp, arms and hands — because the
+                face does not hold tension in isolation. It is slower than it
                 sounds. Nothing is forced.
               </p>
 
