@@ -17,7 +17,10 @@ export const PENDING = "PENDING" as const;
 
 export const site = {
   name: "Xochi Face",
-  wordmark: "xochi face.",
+  // No terminal period. The 2026 brand kit sets the wordmark as "xochi face."
+  // but Nicole has confirmed the name carries no period; this is the source of
+  // truth and <Wordmark /> renders it.
+  wordmark: "xochi face",
   practice: "lymphatic facials",
   location: "Austin, Texas",
   availability: "by appointment",

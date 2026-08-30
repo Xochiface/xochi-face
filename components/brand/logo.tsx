@@ -1,3 +1,4 @@
+import { site } from "@/content/site";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,6 +43,8 @@ export function PortraitMark({
  * The wordmark is live text, not artwork — the kit sets it in Fraunces
  * Light/350. Rendering it as text keeps it selectable, searchable, and crisp
  * at any size.
+ *
+ * The string comes from content/site.ts so there is one place to change it.
  */
 export function Wordmark({ className }: { className?: string }) {
   return (
@@ -51,7 +54,7 @@ export function Wordmark({ className }: { className?: string }) {
         className,
       )}
     >
-      xochi face.
+      {site.wordmark}
     </span>
   );
 }
