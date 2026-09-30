@@ -43,9 +43,7 @@ export const site = {
   parent: "Xochi Garden",
   year: 2026,
 
-  /** Live Google Appointments page, from her Instagram bio. */
-  bookingUrl: "https://calendar.app.google/rpzrynpBtDiMooha6",
-  bookingPlatform: "Google Appointments",
+  /** Booking lives in content/booking.ts — one owner, so it cannot drift. */
   instagram: "https://www.instagram.com/xochiface/",
   instagramHandle: "@xochiface",
 
