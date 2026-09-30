@@ -75,7 +75,9 @@ export function BookingEmbed() {
           src={booking.embedUrl}
           title={`Book a session — ${booking.provider}`}
           onLoad={() => setLoaded(true)}
-          allow="payment"
+          // Matches what Square's own snippet sets, so Apple Pay and Google Pay
+          // still work inside the frame.
+          allow="payment app.squareup.com"
           loading="lazy"
           className="h-full w-full border-0"
           style={{ minHeight: booking.minHeight ?? 720 }}

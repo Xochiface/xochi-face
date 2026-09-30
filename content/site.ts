@@ -77,16 +77,16 @@ export type Service = {
 };
 
 /**
- * These are the three services live on Nicole's booking page right now, with
- * her own descriptions.
+ * The four services live on Nicole's Square booking page, read directly from
+ * it on 2026-09-30. Names, prices, and durations mirror Square exactly — if
+ * these disagree with the booking page, the booking page is right and this
+ * file is stale.
  *
- * ⚠ CONFLICT WITH THE BRAND KIT — needs Nicole's decision.
- * The kit specifies a different menu entirely: "the ninety" (90 min, $220),
- * "the sixty" (60 min, $160), and "the new moon" ($380/month). None of those
- * exist on the booking page, and the kit's prices are roughly double what she
- * actually charges. Either the kit describes where she is heading, or the
- * booking page is out of date. Until that is settled, the site shows what can
- * actually be booked.
+ * Note on the brand kit: it specifies a different menu again — "the ninety"
+ * (90 min, $220), "the sixty" (60 min, $160), "the new moon" ($380/month).
+ * Her real pricing has moved toward it (the 90 minute Lymphatic at $175 is
+ * close to the kit's $220), but the naming and the monthly membership still
+ * do not exist. The site follows what can actually be booked.
  */
 export const services: readonly Service[] = [
   {
@@ -102,10 +102,28 @@ export const services: readonly Service[] = [
       "Scalp massage",
       "Arm and hand massage",
     ],
-    price: "$100",
+    price: "$125",
     duration: "60 min",
     ornament: "marigold",
     featured: true,
+  },
+  {
+    slug: "ninety-minute-lymphatic",
+    eyebrow: "The full arc",
+    name: "90 minute Lymphatic",
+    summary:
+      "Extra love and care. Cleansing, lymphatic drainage, and a long finish with hot and cold stone gua sha and red light therapy.",
+    body: "The longest session, and the least hurried. A facial cleanse first, then lymphatic drainage through the head, shoulders, arms and hands. It closes with hot and cold stone gua sha and red light therapy — the part most people do not want to get up from.",
+    includes: [
+      "Facial cleansing",
+      "Manual lymphatic drainage",
+      "Head, shoulder, arm and hand massage",
+      "Hot and cold stone gua sha",
+      "Red light therapy",
+    ],
+    price: "$175",
+    duration: "90 min",
+    ornament: "xochitl",
   },
   {
     slug: "thirty-minutes-in-heaven",
@@ -119,7 +137,7 @@ export const services: readonly Service[] = [
       "Décolleté and trapezius",
       "Neck release",
     ],
-    price: "$70",
+    price: "$80",
     duration: "30 min",
     ornament: "six-petal",
   },
@@ -136,7 +154,7 @@ export const services: readonly Service[] = [
       "Hand and arm massage",
       "First visit only",
     ],
-    price: "$70",
+    price: "$100",
     duration: "60 min",
     ornament: "seed",
   },

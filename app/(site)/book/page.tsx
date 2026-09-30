@@ -57,7 +57,7 @@ export default function BookPage() {
 
         {/* Choose a session ----------------------------------------------- */}
         <section className="mx-auto max-w-7xl px-5 pb-20 md:px-10 md:pb-24">
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             {services.map((s) => (
               <div
                 key={s.slug}

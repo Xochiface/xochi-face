@@ -34,13 +34,30 @@ export type BookingConfig = {
 };
 
 export const booking: BookingConfig = {
-  // Currently live: the Google Appointments page linked from her Instagram bio.
-  // To move to Square: set mode "embed", provider "Square", and paste the
-  // booking-site URL into both bookingUrl and embedUrl. Nothing else changes.
-  mode: "link",
-  provider: "Google Appointments",
-  bookingUrl: "https://calendar.app.google/rpzrynpBtDiMooha6",
-  minHeight: 720,
+  mode: "embed",
+  provider: "Square",
+
+  /**
+   * Square gives merchants a <script> snippet to paste. We deliberately do not
+   * use it. Reading that script shows it does exactly one useful thing — insert
+   * an iframe pointing at the widget URL below — plus some defensive handling
+   * for Wix and Weebly page editors that does not apply to us. Embedding the
+   * iframe ourselves avoids running third-party JavaScript on the site, and
+   * lets us own the loading state, the height, and the fallback.
+   *
+   * Verified: the widget sends no X-Frame-Options, and its enforced CSP sets no
+   * frame-ancestors, so it embeds cleanly. (Google Appointments sends
+   * X-Frame-Options SAMEORIGIN and cannot be embedded at all — that is why we
+   * moved.)
+   *
+   * Both IDs are the public merchant and location tokens from her embed
+   * snippet, not secrets.
+   */
+  bookingUrl:
+    "https://book.squareup.com/appointments/tx8afy4wdmiz9i/location/LCZ20MKVHF3Y5/services",
+  embedUrl:
+    "https://app.squareup.com/appointments/buyer/widget/tx8afy4wdmiz9i/LCZ20MKVHF3Y5",
+  minHeight: 760,
 };
 
 export const bookingReady = booking.mode !== "pending";
