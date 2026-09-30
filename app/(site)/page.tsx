@@ -20,28 +20,38 @@ export default function HomePage() {
       {/* ---------------------------------------------------------------- */}
       {/* Hero — pinned. Everything below scrolls up over it.               */}
       {/* ---------------------------------------------------------------- */}
-      <section className="night bg-surface text-ink sticky top-0 flex h-svh flex-col justify-end overflow-hidden">
-        <Image
-          src={photos.hero.src}
-          alt={photos.hero.alt}
-          fill
-          priority
-          placeholder="blur"
-          sizes="100vw"
-          className="object-cover object-[70%_center]"
-        />
-        {/* Warm scrim — keeps the type legible without flattening the light. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-gradient-to-r from-sienna-900 via-sienna-900/75 to-transparent"
-        />
-        <div
-          aria-hidden="true"
-          className="from-sienna-900/80 absolute inset-0 bg-gradient-to-t via-transparent to-transparent"
-        />
+      <section className="night bg-surface text-ink sticky top-0 h-svh overflow-hidden">
+        {/*
+          The photograph is a 3:4 portrait. Stretched across a landscape
+          viewport it becomes an extreme macro — a nose at two feet wide — so on
+          desktop it takes the right half only, where the panel ratio is close
+          to the source and the crop stays gentle. On mobile the viewport is
+          already portrait, so it runs full-bleed behind the type.
+        */}
+        <div className="absolute inset-0 md:left-[56%]">
+          <Image
+            src={photos.hero.src}
+            alt={photos.hero.alt}
+            fill
+            priority
+            placeholder="blur"
+            sizes="(min-width: 768px) 50vw, 100vw"
+            className="object-cover object-[62%_center]"
+          />
+          {/* Mobile: type sits over the image, so it needs a real scrim. */}
+          <div
+            aria-hidden="true"
+            className="from-sienna-900 via-sienna-900/55 to-sienna-900/20 absolute inset-0 bg-gradient-to-t md:hidden"
+          />
+          {/* Desktop: only feather the left edge into the sienna panel. */}
+          <div
+            aria-hidden="true"
+            className="from-sienna-900 absolute inset-0 hidden bg-gradient-to-r via-transparent to-transparent md:block"
+          />
+        </div>
 
-        <div className="relative mx-auto w-full max-w-7xl px-5 pb-16 md:px-10 md:pb-24">
-          <div className="max-w-2xl">
+        <div className="relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-end px-5 pb-16 md:justify-center md:px-10 md:pb-0">
+          <div className="max-w-[38rem]">
             <PortraitMark size={64} className="mb-8 md:mb-10" />
             <p className="eyebrow-caps text-ink-muted">
               {site.practice} · {site.location}
@@ -142,7 +152,7 @@ export default function HomePage() {
                   <Ornament name={s.ornament} size={36} />
                 </div>
                 <p className="label-caps text-ink-soft">{s.eyebrow}</p>
-                <h3 className="text-subtitle text-ink mt-3">{s.name}</h3>
+                <h3 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">{s.name}</h3>
                 <p className="text-body text-ink-muted mt-5 flex-1 italic">
                   {s.summary}
                 </p>

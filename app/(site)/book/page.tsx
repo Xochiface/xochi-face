@@ -67,7 +67,7 @@ export default function BookPage() {
                   <Ornament name={s.ornament} size={36} />
                 </div>
                 <p className="label-caps text-ink-soft">{s.eyebrow}</p>
-                <h2 className="text-subtitle text-ink mt-3">{s.name}</h2>
+                <h2 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">{s.name}</h2>
                 <p className="text-body text-ink-muted mt-5 flex-1 italic">
                   {s.summary}
                 </p>
