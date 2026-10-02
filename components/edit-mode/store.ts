@@ -75,6 +75,25 @@ export type TextEdit = { ref: ElementRef; original: string; edited: string };
 export type MoveEdit = { ref: ElementRef; dx: number; dy: number };
 export type SizeEdit = { ref: ElementRef; basePx: number; factor: number };
 export type HideEdit = { ref: ElementRef };
+
+/** A photo or video swapped into an image slot. */
+export type MediaEdit = {
+  ref: ElementRef;
+  /** Which manifest slot this replaces (content/photos.ts), and its file. */
+  slot: string | null;
+  slotFile: string | null;
+  needs: { width: number; height: number } | null;
+  kind: "image" | "video";
+  file: string;
+  original: string;
+  preview: string;
+  originalName: string;
+  width: number | null;
+  height: number | null;
+  bytes: number;
+  converted: boolean;
+  warnings: string[];
+};
 export type Note = {
   id: string;
   x: number;
@@ -88,6 +107,7 @@ export type PageEdits = {
   moves: Record<string, MoveEdit>;
   size: Record<string, SizeEdit>;
   hidden: Record<string, HideEdit>;
+  media: Record<string, MediaEdit>;
   notes: Note[];
 };
 
@@ -100,7 +120,7 @@ const EDITS_KEY = "xochi-edits-v1";
 const EMPTY: EditState = { pages: {}, lastSaved: null };
 
 export function emptyPage(): PageEdits {
-  return { text: {}, moves: {}, size: {}, hidden: {}, notes: [] };
+  return { text: {}, moves: {}, size: {}, hidden: {}, media: {}, notes: [] };
 }
 
 let state: EditState = EMPTY;
@@ -148,7 +168,8 @@ export const editStore = {
 /** Immutable update of one page's edits. */
 export function updatePage(path: string, fn: (page: PageEdits) => PageEdits) {
   load();
-  const current = state.pages[path] ?? emptyPage();
+  // Spread over an empty page so drafts saved before a field existed still work.
+  const current = { ...emptyPage(), ...state.pages[path] };
   set({ ...state, pages: { ...state.pages, [path]: fn(current) } });
 }
 
@@ -174,6 +195,7 @@ export function countChanges(s: EditState): number {
       Object.keys(p.moves).length +
       Object.keys(p.size).length +
       Object.keys(p.hidden).length +
+      Object.keys(p.media ?? {}).length +
       p.notes.filter((note) => note.text.trim()).length,
     0,
   );

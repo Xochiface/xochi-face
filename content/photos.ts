@@ -73,3 +73,26 @@ export const photos = {
 } satisfies Record<string, Photo>;
 
 export type PhotoName = keyof typeof photos;
+
+/** The file each slot is stored as in assets/photos/. */
+export const photoFiles: Record<PhotoName, string> = {
+  hero: "hero.jpg",
+  stillness: "stillness.jpg",
+  stillLife: "still-life.jpg",
+  founder: "founder.jpg",
+  garden: "garden.jpg",
+};
+
+/**
+ * Tags an <Image> with its slot so edit mode can say exactly which photo a
+ * replacement is for, which file it lands in, and how large it needs to be.
+ * Spread onto the component: `<Image {...photoAttrs("hero")} … />`.
+ */
+export function photoAttrs(name: PhotoName) {
+  const { width, height } = photos[name].src;
+  return {
+    "data-photo": name,
+    "data-photo-file": `assets/photos/${photoFiles[name]}`,
+    "data-photo-min": `${width}x${height}`,
+  };
+}

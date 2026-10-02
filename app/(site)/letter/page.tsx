@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip } from "@/components/brand/ornament";
-import { photos } from "@/content/photos";
+import { photoAttrs, photos } from "@/content/photos";
 import { anatomy, letter, site } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -81,6 +81,7 @@ export default function LetterPage() {
       <div className="mx-auto max-w-2xl px-5 pb-24 md:px-10">
         <div className="shadow-rest relative overflow-hidden rounded-md">
           <Image
+            {...photoAttrs("founder")}
             src={photos.founder.src}
             alt={photos.founder.alt}
             placeholder="blur"

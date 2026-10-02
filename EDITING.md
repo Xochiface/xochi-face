@@ -42,6 +42,57 @@ Click **✎ Edit**. The bar at the bottom grows into the edit tools.
 Your draft is kept in this browser. Refreshing, switching pages, or closing the
 tab loses nothing.
 
+## Replacing photos and video
+
+Click any photo on the site — even the hero, through its colour wash — and press
+**⇪ Replace**. Pick a photo or video from the computer, or on a phone from the
+photo library or camera. It appears in place straight away.
+
+What happens to a photo when it's uploaded:
+
+- **iPhone HEIC photos are converted to JPEG.** (Uploading straight from the
+  iPhone usually arrives as JPEG already — iOS converts on the way out.)
+- **It's turned the right way up**, so portrait shots don't arrive sideways.
+- **It's scaled down, never up.** Phone photos are 12–48 megapixels, several
+  times what the site needs, so they're reduced to at most 3200px on the long
+  side. You won't need to upscale phone photos; you'd only lose sharpness by
+  cropping very tightly.
+- **Location data is removed.** iPhones record where every photo was taken.
+  That never reaches the website. The untouched original, location included,
+  is kept only on this computer (in `edits/media/originals/`, never committed)
+  for the final crop.
+
+You'll get a plain warning if a photo is smaller than its spot needs (it may
+look soft) or a different shape (it'll be cropped — the preview shows roughly
+what stays).
+
+**Video** is accepted and previewed, but kept exactly as uploaded. Making it
+web-ready — compressing, trimming, converting from the iPhone's format — needs
+a tool called ffmpeg, which isn't installed yet. That happens when the edits are
+applied. Keep clips short; a few seconds of slow movement works best.
+
+**Uploads only work while running the site locally.** On the live site, the
+Replace button will tell you so — send the photos along with your saved edits.
+
+## Editing from your phone
+
+Handy for using photos straight from the camera roll.
+
+1. Have the phone and this computer on the **same Wi-Fi**, or this computer on
+   the phone's **Personal Hotspot**.
+2. On this computer, run `npm run dev`.
+3. Find this computer's address: run `ipconfig` and look for **IPv4 Address**
+   (something like `172.20.10.13` or `192.168.1.24`).
+4. On the phone, open `http://THAT-ADDRESS:3000` — e.g. `http://172.20.10.13:3000`.
+   The ✎ Edit button is already there.
+
+If the phone can't connect, Windows Firewall is the usual cause: the first time,
+Windows may ask whether Node.js can use the network — allow it on **Private**
+networks. If you're on a network Windows calls *Public*, it'll block the phone.
+
+While the dev site runs, anyone on the same network could open it. That's fine
+at home or on your own hotspot; don't run it on café or hotel Wi-Fi.
+
 ## Saving and handing off
 
 **Save changes** packages every edit on every page into one file:
@@ -69,9 +120,25 @@ the draft refers to the old version of the page.
 
 ## For developers
 
-Code: `components/edit-mode/` (toolbar, store, DOM helpers) and
-`app/api/edits/route.ts` (the local writer — development only, returns 404 in
-production). Packages land in `edits/`, which is git-ignored.
+Code: `components/edit-mode/` (toolbar, store, DOM helpers) and three
+development-only routes, all returning 404 in production:
+
+- `app/api/edits/route.ts` — writes the edit package
+- `app/api/edits/media/route.ts` — receives uploads; HEIC → JPEG via
+  `heic-convert`, then `sharp` to orient, cap at 3200px (no enlargement) and
+  strip all metadata
+- `app/api/edits/media/[file]/route.ts` — serves uploads back for preview, with
+  byte ranges (Safari won't play video without them)
+
+Packages and media land in `edits/`, which is git-ignored. Photo slots are
+tagged with `photoAttrs()` from `content/photos.ts`, so a replacement names its
+slot, its target file in `assets/photos/`, and the size it needs. Phone access
+comes from `allowedDevOrigins` in `next.config.ts`, which trusts this machine's
+own network addresses, read at dev-server start.
+
+Next.js must stay at **16.3.8 or later**: 16.3.2 had unauthenticated
+remote-code-execution flaws, one specific to Windows hosts — worth knowing
+before ever exposing a dev server to a network.
 
 Each entry in a package carries the element's tag, its **original** source
 wording, and the heading of its section, so it can be found in code by text

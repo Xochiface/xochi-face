@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 
 import {
   UI_ATTR,
+  applyMedia,
   applyPage,
   computedFontPx,
   describe,
@@ -13,12 +14,14 @@ import {
   isEditUi,
   markOriginal,
   measure,
-  pickTarget,
+  pickAt,
+  pickFile,
   resetElement,
   setBodyCursor,
   setFontPx,
   setHiddenStyle,
   setTranslate,
+  slotOf,
   type Box,
 } from "./dom";
 import {
@@ -31,6 +34,7 @@ import {
   processAccessParam,
   updatePage,
   type EditState,
+  type MediaEdit,
   type Note,
 } from "./store";
 
@@ -213,6 +217,81 @@ function EditTools() {
     });
   }
 
+  function flash(message: string, ms = 6000) {
+    setToast(message);
+    setTimeout(() => setToast(null), ms);
+  }
+
+  function replaceMedia(img: HTMLImageElement) {
+    const path = pathname;
+    pickFile("image/*,video/*", async (file) => {
+      const { slot, slotFile, needs } = slotOf(img);
+      setToast(`Uploading ${file.name}…`);
+
+      const body = new FormData();
+      body.append("file", file);
+      body.append("slot", slot ?? "photo");
+
+      let res: Response;
+      try {
+        res = await fetch("/api/edits/media", { method: "POST", body });
+      } catch {
+        flash("Upload failed — is the dev server still running?");
+        return;
+      }
+      if (res.status === 404) {
+        flash("Photo uploads only work while running the site locally. Send the photo along with your saved edits instead.", 9000);
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        flash(data.error ?? "That upload didn't work.");
+        return;
+      }
+
+      // Honest notes about fit, shown now and carried into the package.
+      const warnings: string[] = [];
+      if (data.note) warnings.push(data.note);
+      if (data.kind === "image" && needs && data.width && data.height) {
+        if (data.width < needs.width || data.height < needs.height) {
+          warnings.push(
+            `This photo is ${data.width}×${data.height}; this spot is best at ${needs.width}×${needs.height} or larger, so it may look slightly soft.`,
+          );
+        }
+        const want = needs.width / needs.height;
+        const have = data.width / data.height;
+        if (Math.abs(have - want) / want > 0.04) {
+          warnings.push("It's a different shape from this spot, so it will be cropped to fit — the preview shows roughly what stays.");
+        }
+      }
+      if (data.kind === "video" && data.bytes > 40 * 1024 * 1024) {
+        warnings.push(`At ${Math.round(data.bytes / 1024 / 1024)}MB this video is heavy for a website; it will be trimmed and compressed.`);
+      }
+
+      const ref = describe(img);
+      const media: MediaEdit = {
+        ref,
+        slot,
+        slotFile,
+        needs,
+        kind: data.kind,
+        file: data.file,
+        original: data.original,
+        preview: data.preview,
+        originalName: data.originalName,
+        width: data.width,
+        height: data.height,
+        bytes: data.bytes,
+        converted: !!data.converted,
+        warnings,
+      };
+      applyMedia(img, media.kind, media.preview);
+      updatePage(path, (p) => ({ ...p, media: { ...p.media, [ref.selector]: media } }));
+      refresh(img);
+      flash(warnings.length ? `Replaced. ${warnings.join(" ")}` : "Replaced.", warnings.length ? 11000 : 4000);
+    });
+  }
+
   function reset(el: HTMLElement) {
     const ref = describe(el);
     const k = ref.selector;
@@ -224,7 +303,7 @@ function EditTools() {
         delete next[k];
         return next;
       };
-      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), hidden: strip(p.hidden) };
+      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), hidden: strip(p.hidden), media: strip(p.media) };
     });
     refresh(el);
   }
@@ -259,7 +338,7 @@ function EditTools() {
         setPlacingNote(false);
         return;
       }
-      const el = pickTarget(target);
+      const el = pickAt(target, e.clientX, e.clientY);
       setSelection(el ? { el, path: pathname, box: measure(el) } : null);
     };
 
@@ -267,7 +346,7 @@ function EditTools() {
       const target = e.target as Element;
       if (isEditUi(target)) return;
       e.preventDefault();
-      const el = pickTarget(target);
+      const el = pickAt(target, e.clientX, e.clientY);
       if (el) {
         setSelection({ el, path: pathname, box: measure(el) });
         editText(el);
@@ -275,7 +354,7 @@ function EditTools() {
     };
 
     const onMove = (e: MouseEvent) => {
-      const el = pickTarget(e.target as Element);
+      const el = pickAt(e.target as Element, e.clientX, e.clientY);
       setHover(el ? measure(el) : null);
     };
 
@@ -402,6 +481,9 @@ function EditTools() {
             if (parent && parent !== document.body) refresh(parent);
           }}
           onReset={() => reset(selection.el)}
+          onReplace={() => {
+            if (selection.el instanceof HTMLImageElement) replaceMedia(selection.el);
+          }}
           onClose={() => setSelection(null)}
           isHidden={!!page?.hidden[describe(selection.el).selector]}
         />
@@ -497,9 +579,9 @@ function EditTools() {
       {active && !selection && !placingNote ? (
         <p
           {...ui}
-          className="font-label pointer-events-none fixed bottom-[4.75rem] left-1/2 z-[95] -translate-x-1/2 whitespace-nowrap rounded-pill bg-[#2c1503]/80 px-3 py-1 text-[0.625rem] tracking-wide text-[#ece1cb]"
+          className="font-label pointer-events-none fixed bottom-[4.75rem] left-1/2 z-[95] hidden -translate-x-1/2 sm:block whitespace-nowrap rounded-pill bg-[#2c1503]/80 px-3 py-1 text-[0.625rem] tracking-wide text-[#ece1cb]"
         >
-          Click to select · double-click to rewrite · arrows nudge (shift = 10px) · Esc to deselect
+          Click to select · double-click to rewrite · select a photo to replace it · arrows nudge (shift = 10px) · Esc to deselect
         </p>
       ) : null}
     </>,
@@ -520,9 +602,11 @@ function SelectionTools({
   onParent,
   onReset,
   onClose,
+  onReplace,
 }: {
   selection: Selection;
   isHidden: boolean;
+  onReplace: () => void;
   onEditText: () => void;
   onDrag: (e: React.PointerEvent) => void;
   onSize: (delta: number) => void;
@@ -533,9 +617,21 @@ function SelectionTools({
   onClose: () => void;
 }) {
   const { box, el } = selection;
-  const above = box.top > 56;
+  const isImage = el instanceof HTMLImageElement;
   const tool =
     "font-label rounded-md px-2 py-1.5 text-[0.6875rem] text-[#f7f1e2] hover:bg-white/15 disabled:opacity-30";
+
+  // Above the selection if there's room; below it if that's still on screen;
+  // otherwise just inside its top edge (tall things like the hero photo).
+  const vw = window.innerWidth;
+  const barWidth = Math.min(isImage ? 360 : 470, vw - 16);
+  const top =
+    box.top > 56
+      ? box.top - 46
+      : box.top + box.height + 64 < window.innerHeight
+        ? box.top + box.height + 10
+        : Math.max(box.top, 72) + 12;
+  const left = Math.max(8, Math.min(box.left, vw - barWidth - 8));
 
   return (
     <>
@@ -546,13 +642,22 @@ function SelectionTools({
       />
       <div
         {...ui}
-        className="fixed z-[92] flex items-center gap-0.5 rounded-lg bg-[#2c1503] p-1 shadow-lg"
-        style={{
-          top: above ? box.top - 46 : box.top + box.height + 10,
-          left: Math.max(8, Math.min(box.left, window.innerWidth - 470)),
-        }}
+        className="fixed z-[92] flex flex-wrap items-center gap-0.5 rounded-lg bg-[#2c1503] p-1 shadow-lg"
+        style={{ top, left, maxWidth: vw - 16 }}
       >
-        <span className="font-label px-1.5 text-[0.625rem] uppercase text-[#dcbc82]">{el.tagName.toLowerCase()}</span>
+        <span className="font-label px-1.5 text-[0.625rem] uppercase text-[#dcbc82]">
+          {isImage ? (el.dataset.photo ?? "photo") : el.tagName.toLowerCase()}
+        </span>
+        {isImage ? (
+          <button
+            type="button"
+            className={`${tool} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82]`}
+            onClick={onReplace}
+            title="Replace with a photo or video from this device"
+          >
+            ⇪ Replace
+          </button>
+        ) : null}
         <button
           type="button"
           onPointerDown={onDrag}
@@ -561,15 +666,19 @@ function SelectionTools({
         >
           ⠿ Move
         </button>
-        <button type="button" className={tool} onClick={onEditText} disabled={el instanceof HTMLImageElement}>
-          ✎ Text
-        </button>
-        <button type="button" className={tool} onClick={() => onSize(-0.05)} title="Smaller text">
-          A−
-        </button>
-        <button type="button" className={tool} onClick={() => onSize(0.05)} title="Larger text">
-          A+
-        </button>
+        {!isImage ? (
+          <>
+            <button type="button" className={tool} onClick={onEditText}>
+              ✎ Text
+            </button>
+            <button type="button" className={tool} onClick={() => onSize(-0.05)} title="Smaller text">
+              A−
+            </button>
+            <button type="button" className={tool} onClick={() => onSize(0.05)} title="Larger text">
+              A+
+            </button>
+          </>
+        ) : null}
         <button type="button" className={tool} onClick={onHide}>
           {isHidden ? "Show" : "Hide"}
         </button>
@@ -678,12 +787,30 @@ function buildPackage(s: EditState) {
             factor: z.factor,
           })),
           hidden: Object.values(p.hidden).map((h) => ({ element: h.ref })),
+          media: Object.values(p.media ?? {}).map((m) => ({
+            element: m.ref,
+            slot: m.slot,
+            replaces: m.slotFile,
+            needs: m.needs,
+            kind: m.kind,
+            file: m.file,
+            original: m.original,
+            originalName: m.originalName,
+            width: m.width,
+            height: m.height,
+            bytes: m.bytes,
+            convertedFromHeic: m.converted,
+            warnings: m.warnings,
+          })),
           notes: p.notes
             .filter((n) => n.text.trim())
             .map((n) => ({ text: n.text, near: n.near, position: { x: n.x, y: n.y } })),
         },
       ] as const)
-      .filter(([, p]) => p.textEdits.length + p.moves.length + p.textSize.length + p.hidden.length + p.notes.length),
+      .filter(
+        ([, p]) =>
+          p.textEdits.length + p.moves.length + p.textSize.length + p.hidden.length + p.media.length + p.notes.length,
+      ),
   );
   return {
     kind: "xochi-edits" as const,

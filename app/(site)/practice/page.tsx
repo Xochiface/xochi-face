@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
-import { photos } from "@/content/photos";
+import { photoAttrs, photos } from "@/content/photos";
 import { benefits, services, site, voice } from "@/content/site";
 
 export const metadata: Metadata = {
@@ -113,6 +113,7 @@ export default function PracticePage() {
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-32">
             <div className="shadow-lift relative overflow-hidden rounded-md">
               <Image
+                {...photoAttrs("stillness")}
                 src={photos.stillness.src}
                 alt={photos.stillness.alt}
                 placeholder="blur"
