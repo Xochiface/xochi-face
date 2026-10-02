@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLenis } from "lenis/react";
 import { useEffect, useRef, useState } from "react";
 
 import { Wordmark } from "@/components/brand/logo";
@@ -23,6 +24,7 @@ export function Header({ solid }: { solid?: boolean }) {
   const [pastHero, setPastHero] = useState(false);
   const [open, setOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const lenis = useLenis();
 
   useEffect(() => {
     if (isSolid) return;
@@ -38,20 +40,22 @@ export function Header({ solid }: { solid?: boolean }) {
   }, [isSolid]);
 
   // Escape to close, and hold the page still while the overlay is up.
+  // Scroll is locked through Lenis, not body overflow — Lenis drives the
+  // document scroller and doesn't observe body styles, so an overflow lock
+  // would leave the page scrolling behind the menu.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
+    lenis?.stop();
     window.addEventListener("keydown", onKey);
     closeRef.current?.focus();
     return () => {
-      document.body.style.overflow = overflow;
+      lenis?.start();
       window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, lenis]);
 
   const inverted = !isSolid && !pastHero && !open;
 

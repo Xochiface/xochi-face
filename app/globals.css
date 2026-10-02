@@ -242,10 +242,11 @@
     @apply border-border outline-ring/50;
   }
 
+  /* No scroll-behavior: smooth — Lenis owns smooth scrolling and anchors
+     (components/site/smooth-scroll.tsx). Native smoothing would double-ease. */
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    scroll-behavior: smooth;
   }
 
   body {
@@ -277,9 +278,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
-    }
     *,
     *::before,
     *::after {

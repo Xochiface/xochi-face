@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Fraunces, Outfit } from "next/font/google";
+import { SmoothScroll } from "@/components/site/smooth-scroll";
 import "./globals.css";
 
 /**
@@ -43,9 +44,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${cormorant.variable} ${outfit.variable} h-full`}
+      className={`${fraunces.variable} ${cormorant.variable} ${outfit.variable}`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      {/* Lenis sets html/body height:auto, so min-height is pinned to the
+          viewport (svh) rather than a percentage of an auto-height parent. */}
+      <body className="flex min-h-svh flex-col">
+        <SmoothScroll>{children}</SmoothScroll>
+      </body>
     </html>
   );
 }
