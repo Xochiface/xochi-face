@@ -1,0 +1,709 @@
+"use client";
+
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+
+import {
+  UI_ATTR,
+  applyPage,
+  computedFontPx,
+  describe,
+  editTextInPlace,
+  isEditUi,
+  markOriginal,
+  measure,
+  pickTarget,
+  resetElement,
+  setBodyCursor,
+  setFontPx,
+  setHiddenStyle,
+  setTranslate,
+  type Box,
+} from "./dom";
+import {
+  accessStore,
+  clearAll,
+  countChanges,
+  editStore,
+  getState,
+  markSaved,
+  processAccessParam,
+  updatePage,
+  type EditState,
+  type Note,
+} from "./store";
+
+/**
+ * Private edit mode.
+ *
+ * A button at the bottom of every page. In edit mode you can click any text to
+ * select it, double-click to rewrite it, drag to move it, resize it, hide it,
+ * and pin notes anywhere. Edits are a working draft kept in this browser until
+ * "Save changes" packages every page into one JSON file:
+ *
+ *   - running locally (npm run dev): written into the project at edits/
+ *   - on the live site: downloaded as a file
+ *
+ * Nothing here can change the live site for anyone else — edits only alter
+ * this browser's view of the page, then get handed to a developer to apply.
+ *
+ * Visibility: always on in development. On the live site it is hidden unless
+ * this browser has been switched on with ?xochi-edit (and off with
+ * ?xochi-edit=off). See EDITING.md.
+ */
+
+const PAGES: [string, string][] = [
+  ["/", "Home"],
+  ["/practice", "Practice"],
+  ["/letter", "Letter"],
+  ["/book", "Book"],
+];
+
+const ui = { [UI_ATTR]: "" };
+
+export function EditMode() {
+  const hasAccess = useSyncExternalStore(
+    accessStore.subscribe,
+    accessStore.getSnapshot,
+    accessStore.getServerSnapshot,
+  );
+  useEffect(() => processAccessParam(), []);
+  return hasAccess ? <EditTools /> : null;
+}
+
+type Selection = { el: HTMLElement; path: string; box: Box };
+
+function EditTools() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const edits = useSyncExternalStore(editStore.subscribe, editStore.getSnapshot, editStore.getServerSnapshot);
+  const page = edits.pages[pathname];
+
+  const [active, setActive] = useState(false);
+  const [rawSelection, setSelection] = useState<Selection | null>(null);
+  const [hover, setHover] = useState<Box | null>(null);
+  const [placingNote, setPlacingNote] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // A selection belongs to the page it was made on.
+  const selection = rawSelection?.path === pathname ? rawSelection : null;
+  const changes = countChanges(edits);
+
+  /* Apply the saved draft whenever a page opens, and restyle on every edit. */
+  useEffect(() => {
+    const t = setTimeout(() => applyPage(getState().pages[pathname], { includeText: true }), 80);
+    return () => clearTimeout(t);
+  }, [pathname]);
+
+  useEffect(() => {
+    applyPage(page, { includeText: false });
+  }, [page]);
+
+  useEffect(() => {
+    setBodyCursor(active && placingNote ? "crosshair" : "");
+    return () => setBodyCursor("");
+  }, [active, placingNote]);
+
+  /* ---------------------------------------------------------------------- */
+  /* Recording edits                                                         */
+  /* ---------------------------------------------------------------------- */
+
+  function refresh(el: HTMLElement) {
+    setSelection({ el, path: pathname, box: measure(el) });
+  }
+
+  function editText(el: HTMLElement) {
+    if (el instanceof HTMLImageElement) return;
+    const path = pathname;
+    editTextInPlace(el, (before, after) => {
+      const selector = describe(el).selector;
+      const original = getState().pages[path]?.text[selector]?.original ?? before;
+      const unchanged = after.trim() === original.trim();
+      // Remember the source wording before describing, so the record — and
+      // anything later described inside this section — names the original.
+      markOriginal(el, unchanged ? null : original);
+      const ref = describe(el);
+      updatePage(path, (p) => {
+        const text = { ...p.text };
+        if (unchanged) delete text[selector];
+        else text[selector] = { ref, original, edited: after };
+        return { ...p, text };
+      });
+      refresh(el);
+    });
+  }
+
+  function moveBy(el: HTMLElement, ddx: number, ddy: number) {
+    const ref = describe(el);
+    const cur = getState().pages[pathname]?.moves[ref.selector];
+    commitMove(el, (cur?.dx ?? 0) + ddx, (cur?.dy ?? 0) + ddy);
+  }
+
+  function commitMove(el: HTMLElement, dx: number, dy: number) {
+    const ref = describe(el);
+    setTranslate(el, dx, dy);
+    updatePage(pathname, (p) => {
+      const moves = { ...p.moves };
+      if (!dx && !dy) delete moves[ref.selector];
+      else moves[ref.selector] = { ref: moves[ref.selector]?.ref ?? ref, dx, dy };
+      return { ...p, moves };
+    });
+    refresh(el);
+  }
+
+  function startDrag(e: React.PointerEvent, el: HTMLElement) {
+    e.preventDefault();
+    const ref = describe(el);
+    const cur = getState().pages[pathname]?.moves[ref.selector];
+    const baseX = cur?.dx ?? 0;
+    const baseY = cur?.dy ?? 0;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let dx = baseX;
+    let dy = baseY;
+    const onMove = (ev: PointerEvent) => {
+      dx = Math.round(baseX + ev.clientX - startX);
+      dy = Math.round(baseY + ev.clientY - startY);
+      setTranslate(el, dx, dy);
+      refresh(el);
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      commitMove(el, dx, dy);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  function resize(el: HTMLElement, delta: number) {
+    const ref = describe(el);
+    updatePage(pathname, (p) => {
+      const size = { ...p.size };
+      const cur = size[ref.selector];
+      const basePx = cur?.basePx ?? computedFontPx(el);
+      const factor = Math.round(((cur?.factor ?? 1) + delta) * 100) / 100;
+      if (factor === 1) {
+        delete size[ref.selector];
+        setFontPx(el, null);
+      } else {
+        size[ref.selector] = { ref: cur?.ref ?? ref, basePx, factor };
+        setFontPx(el, Math.round(basePx * factor * 10) / 10);
+      }
+      return { ...p, size };
+    });
+    refresh(el);
+  }
+
+  function toggleHidden(el: HTMLElement) {
+    const ref = describe(el);
+    updatePage(pathname, (p) => {
+      const hidden = { ...p.hidden };
+      if (hidden[ref.selector]) {
+        delete hidden[ref.selector];
+        setHiddenStyle(el, false);
+      } else {
+        hidden[ref.selector] = { ref };
+        setHiddenStyle(el, true);
+      }
+      return { ...p, hidden };
+    });
+  }
+
+  function reset(el: HTMLElement) {
+    const ref = describe(el);
+    const k = ref.selector;
+    const original = getState().pages[pathname]?.text[k]?.original;
+    resetElement(el, original);
+    updatePage(pathname, (p) => {
+      const strip = <T,>(rec: Record<string, T>) => {
+        const next = { ...rec };
+        delete next[k];
+        return next;
+      };
+      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), hidden: strip(p.hidden) };
+    });
+    refresh(el);
+  }
+
+  function addNote(x: number, y: number, near: Element | null) {
+    const note: Note = {
+      id: Math.random().toString(36).slice(2, 9),
+      x: Math.round(x),
+      y: Math.round(y),
+      text: "",
+      near: near && !isEditUi(near) ? describe(near) : null,
+    };
+    updatePage(pathname, (p) => ({ ...p, notes: [...p.notes, note] }));
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Page interaction while editing                                          */
+  /* ---------------------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!active) return;
+
+    // Capture phase, ahead of React and Next's <Link>: in edit mode a click
+    // selects; it never navigates or submits.
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (isEditUi(target) || (target as HTMLElement).isContentEditable) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (placingNote) {
+        addNote(e.pageX, e.pageY, target);
+        setPlacingNote(false);
+        return;
+      }
+      const el = pickTarget(target);
+      setSelection(el ? { el, path: pathname, box: measure(el) } : null);
+    };
+
+    const onDblClick = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (isEditUi(target)) return;
+      e.preventDefault();
+      const el = pickTarget(target);
+      if (el) {
+        setSelection({ el, path: pathname, box: measure(el) });
+        editText(el);
+      }
+    };
+
+    const onMove = (e: MouseEvent) => {
+      const el = pickTarget(e.target as Element);
+      setHover(el ? measure(el) : null);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPlacingNote(false);
+        setSelection(null);
+        return;
+      }
+      const step = e.shiftKey ? 10 : 1;
+      const arrows: Record<string, [number, number]> = {
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+      };
+      const d = arrows[e.key];
+      if (d && rawSelection && rawSelection.path === pathname) {
+        e.preventDefault();
+        moveBy(rawSelection.el, d[0], d[1]);
+      }
+    };
+
+    const onScroll = () => {
+      setHover(null);
+      setSelection((s) => (s ? { ...s, box: measure(s.el) } : s));
+    };
+
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("dblclick", onDblClick, true);
+    document.addEventListener("mousemove", onMove, true);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      document.removeEventListener("dblclick", onDblClick, true);
+      document.removeEventListener("mousemove", onMove, true);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+    // The handlers read the latest selection, page and note mode on each run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, placingNote, pathname, rawSelection]);
+
+  /* ---------------------------------------------------------------------- */
+  /* Save / discard                                                          */
+  /* ---------------------------------------------------------------------- */
+
+  async function save() {
+    setSaving(true);
+    const pkg = buildPackage(getState());
+    let where = "";
+    try {
+      const res = await fetch("/api/edits", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(pkg),
+      });
+      if (res.ok) where = (await res.json()).path;
+    } catch {
+      /* no local writer — fall through to a download */
+    }
+    if (!where) {
+      download(pkg);
+      where = "your Downloads folder";
+    }
+    markSaved(where);
+    setSaving(false);
+    setToast(`Saved ${pkg.changeCount} changes to ${where}`);
+    setTimeout(() => setToast(null), 6000);
+  }
+
+  function discard() {
+    if (!confirmDiscard) {
+      setConfirmDiscard(true);
+      setTimeout(() => setConfirmDiscard(false), 4000);
+      return;
+    }
+    clearAll();
+    window.location.reload();
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Render                                                                  */
+  /* ---------------------------------------------------------------------- */
+
+  const btn =
+    "font-label rounded-pill px-3.5 py-2 text-[0.6875rem] uppercase tracking-[0.14em] transition-colors duration-quick ease-exhale";
+
+  return createPortal(
+    <>
+      {/* Notes for this page */}
+      {page?.notes.map((note) => (
+        <NoteCard key={note.id} note={note} path={pathname} />
+      ))}
+
+      {/* Hover + selection outlines */}
+      {active && hover && !placingNote ? (
+        <div
+          {...ui}
+          className="pointer-events-none fixed z-[90] rounded-sm outline outline-1 outline-dashed outline-[#c8a053]"
+          style={{ top: hover.top - 3, left: hover.left - 3, width: hover.width + 6, height: hover.height + 6 }}
+        />
+      ) : null}
+
+      {active && selection ? (
+        <SelectionTools
+          selection={selection}
+          onEditText={() => editText(selection.el)}
+          onDrag={(e) => startDrag(e, selection.el)}
+          onSize={(d) => resize(selection.el, d)}
+          onHide={() => toggleHidden(selection.el)}
+          onNote={() =>
+            addNote(
+              selection.box.left + selection.box.width + window.scrollX + 12,
+              selection.box.top + window.scrollY,
+              selection.el,
+            )
+          }
+          onParent={() => {
+            const parent = selection.el.parentElement;
+            if (parent && parent !== document.body) refresh(parent);
+          }}
+          onReset={() => reset(selection.el)}
+          onClose={() => setSelection(null)}
+          isHidden={!!page?.hidden[describe(selection.el).selector]}
+        />
+      ) : null}
+
+      {/* Toast */}
+      {toast ? (
+        <div
+          {...ui}
+          role="status"
+          className="bg-sienna-900 text-bone-100 shadow-lift font-label fixed bottom-24 left-1/2 z-[96] -translate-x-1/2 rounded-md px-5 py-3 text-xs"
+        >
+          {toast}
+        </div>
+      ) : null}
+
+      {/* Bottom bar */}
+      <div
+        {...ui}
+        className="fixed bottom-5 left-1/2 z-[95] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-[1.75rem] bg-[#2c1503]/95 p-1.5 text-[#f7f1e2] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur"
+      >
+        {!active ? (
+          <button type="button" className={`${btn} hover:bg-white/10`} onClick={() => setActive(true)}>
+            ✎ Edit
+            {changes ? (
+              <span className="ml-2 rounded-full bg-[#c8a053] px-2 py-0.5 text-[#2c1503]">{changes}</span>
+            ) : null}
+          </button>
+        ) : (
+          <>
+            <span className="font-label px-2 text-[0.625rem] uppercase tracking-[0.18em] text-[#dcbc82]">
+              Edit mode
+            </span>
+
+            <div className="flex items-center gap-0.5 rounded-pill bg-white/5 p-0.5">
+              {PAGES.map(([href, label]) => (
+                <button
+                  key={href}
+                  type="button"
+                  onClick={() => {
+                    setSelection(null);
+                    router.push(href);
+                  }}
+                  className={`${btn} ${pathname === href ? "bg-[#f7f1e2] text-[#2c1503]" : "hover:bg-white/10"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPlacingNote((v) => !v)}
+              className={`${btn} ${placingNote ? "bg-[#c8a053] text-[#2c1503]" : "hover:bg-white/10"}`}
+            >
+              {placingNote ? "Click to place note" : "+ Note"}
+            </button>
+
+            <button
+              type="button"
+              disabled={saving || !changes}
+              onClick={save}
+              className={`${btn} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82] disabled:opacity-40`}
+            >
+              {saving ? "Saving…" : `Save changes${changes ? ` (${changes})` : ""}`}
+            </button>
+
+            <button
+              type="button"
+              onClick={discard}
+              disabled={!changes}
+              className={`${btn} hover:bg-white/10 disabled:opacity-30 ${confirmDiscard ? "text-[#e8a090]" : ""}`}
+            >
+              {confirmDiscard ? "Click again to discard all" : "Discard"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActive(false);
+                setSelection(null);
+                setPlacingNote(false);
+                setHover(null);
+              }}
+              className={`${btn} hover:bg-white/10`}
+            >
+              Done
+            </button>
+          </>
+        )}
+      </div>
+
+      {active && !selection && !placingNote ? (
+        <p
+          {...ui}
+          className="font-label pointer-events-none fixed bottom-[4.75rem] left-1/2 z-[95] -translate-x-1/2 whitespace-nowrap rounded-pill bg-[#2c1503]/80 px-3 py-1 text-[0.625rem] tracking-wide text-[#ece1cb]"
+        >
+          Click to select · double-click to rewrite · arrows nudge (shift = 10px) · Esc to deselect
+        </p>
+      ) : null}
+    </>,
+    document.body,
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function SelectionTools({
+  selection,
+  isHidden,
+  onEditText,
+  onDrag,
+  onSize,
+  onHide,
+  onNote,
+  onParent,
+  onReset,
+  onClose,
+}: {
+  selection: Selection;
+  isHidden: boolean;
+  onEditText: () => void;
+  onDrag: (e: React.PointerEvent) => void;
+  onSize: (delta: number) => void;
+  onHide: () => void;
+  onNote: () => void;
+  onParent: () => void;
+  onReset: () => void;
+  onClose: () => void;
+}) {
+  const { box, el } = selection;
+  const above = box.top > 56;
+  const tool =
+    "font-label rounded-md px-2 py-1.5 text-[0.6875rem] text-[#f7f1e2] hover:bg-white/15 disabled:opacity-30";
+
+  return (
+    <>
+      <div
+        {...ui}
+        className="pointer-events-none fixed z-[91] rounded-sm outline outline-2 outline-[#c8a053]"
+        style={{ top: box.top - 4, left: box.left - 4, width: box.width + 8, height: box.height + 8 }}
+      />
+      <div
+        {...ui}
+        className="fixed z-[92] flex items-center gap-0.5 rounded-lg bg-[#2c1503] p-1 shadow-lg"
+        style={{
+          top: above ? box.top - 46 : box.top + box.height + 10,
+          left: Math.max(8, Math.min(box.left, window.innerWidth - 470)),
+        }}
+      >
+        <span className="font-label px-1.5 text-[0.625rem] uppercase text-[#dcbc82]">{el.tagName.toLowerCase()}</span>
+        <button
+          type="button"
+          onPointerDown={onDrag}
+          className={`${tool} cursor-grab active:cursor-grabbing`}
+          title="Drag to move"
+        >
+          ⠿ Move
+        </button>
+        <button type="button" className={tool} onClick={onEditText} disabled={el instanceof HTMLImageElement}>
+          ✎ Text
+        </button>
+        <button type="button" className={tool} onClick={() => onSize(-0.05)} title="Smaller text">
+          A−
+        </button>
+        <button type="button" className={tool} onClick={() => onSize(0.05)} title="Larger text">
+          A+
+        </button>
+        <button type="button" className={tool} onClick={onHide}>
+          {isHidden ? "Show" : "Hide"}
+        </button>
+        <button type="button" className={tool} onClick={onNote}>
+          Note
+        </button>
+        <button type="button" className={tool} onClick={onParent} title="Select the containing block">
+          ↑ Parent
+        </button>
+        <button type="button" className={tool} onClick={onReset} title="Undo all changes to this element">
+          Reset
+        </button>
+        <button type="button" className={tool} onClick={onClose} aria-label="Deselect">
+          ×
+        </button>
+      </div>
+    </>
+  );
+}
+
+function NoteCard({ note, path }: { note: Note; path: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const x = pos?.x ?? note.x;
+  const y = pos?.y ?? note.y;
+
+  function update(patch: Partial<Note>) {
+    updatePage(path, (p) => ({ ...p, notes: p.notes.map((n) => (n.id === note.id ? { ...n, ...patch } : n)) }));
+  }
+
+  function startDrag(e: React.PointerEvent) {
+    e.preventDefault();
+    const sx = e.pageX;
+    const sy = e.pageY;
+    let nx = note.x;
+    let ny = note.y;
+    const onMove = (ev: PointerEvent) => {
+      nx = Math.round(note.x + ev.pageX - sx);
+      ny = Math.round(note.y + ev.pageY - sy);
+      setPos({ x: nx, y: ny });
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      setPos(null);
+      update({ x: nx, y: ny, near: describeAt(nx, ny) ?? note.near });
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  return (
+    <div
+      {...ui}
+      className="absolute z-[85] w-60 rounded-md bg-[#f4e3b5] text-[#2c1503] shadow-[0_10px_30px_-10px_rgba(59,29,4,0.45)]"
+      style={{ top: y, left: x }}
+    >
+      <div
+        onPointerDown={startDrag}
+        className="font-label flex cursor-grab items-center justify-between rounded-t-md bg-[#c8a053] px-2.5 py-1 text-[0.625rem] uppercase tracking-[0.14em]"
+      >
+        <span>⠿ Note</span>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => updatePage(path, (p) => ({ ...p, notes: p.notes.filter((n) => n.id !== note.id) }))}
+          aria-label="Delete note"
+          className="px-1 text-sm leading-none"
+        >
+          ×
+        </button>
+      </div>
+      <textarea
+        data-lenis-prevent
+        autoFocus={!note.text}
+        defaultValue={note.text}
+        onChange={(e) => update({ text: e.target.value })}
+        placeholder="What should change here?"
+        rows={3}
+        className="font-label block w-full resize-y rounded-b-md bg-transparent p-2.5 text-xs leading-relaxed outline-none placeholder:text-[#8b5e3c]"
+      />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+
+function describeAt(pageX: number, pageY: number) {
+  const el = document.elementFromPoint(pageX - window.scrollX, pageY - window.scrollY);
+  return el && !isEditUi(el) ? describe(el) : null;
+}
+
+type Package = ReturnType<typeof buildPackage>;
+
+function buildPackage(s: EditState) {
+  const pages = Object.fromEntries(
+    Object.entries(s.pages)
+      .map(([path, p]) => [
+        path,
+        {
+          textEdits: Object.values(p.text).map((t) => ({ element: t.ref, original: t.original, edited: t.edited })),
+          moves: Object.values(p.moves).map((m) => ({ element: m.ref, dx: m.dx, dy: m.dy })),
+          textSize: Object.values(p.size).map((z) => ({
+            element: z.ref,
+            fromPx: z.basePx,
+            toPx: Math.round(z.basePx * z.factor * 10) / 10,
+            factor: z.factor,
+          })),
+          hidden: Object.values(p.hidden).map((h) => ({ element: h.ref })),
+          notes: p.notes
+            .filter((n) => n.text.trim())
+            .map((n) => ({ text: n.text, near: n.near, position: { x: n.x, y: n.y } })),
+        },
+      ] as const)
+      .filter(([, p]) => p.textEdits.length + p.moves.length + p.textSize.length + p.hidden.length + p.notes.length),
+  );
+  return {
+    kind: "xochi-edits" as const,
+    version: 1,
+    createdAt: new Date().toISOString(),
+    origin: window.location.origin,
+    viewport: { width: window.innerWidth, height: window.innerHeight },
+    changeCount: countChanges(s),
+    howToRead:
+      "Positions (dx/dy) are pixel nudges at the viewport size above. Each element carries its tag, its text and the heading of its section so it can be found in source.",
+    pages,
+  };
+}
+
+function download(pkg: Package) {
+  const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `xochi-edits-${pkg.createdAt.slice(0, 19).replace(/[:T]/g, "-")}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
