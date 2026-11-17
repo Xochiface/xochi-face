@@ -97,7 +97,7 @@ export const services: readonly Service[] = [
     eyebrow: "The signature bloom",
     name: "Xochi Signature Facial",
     summary:
-      "A holistic facial combining lymphatic drainage, facial sculpting cleansing, and intentional massage. Includes scalp, arm, and hand massage for a complete experience of relaxation and skin renewal.",
+      "A holistic facial combining lymphatic drainage, facial sculpting, cleansing, and intentional massage. Includes scalp, arm, and hand massage for a complete experience of relaxation and skin renewal.",
     body: "The full practice. We work the lymph toward its natural drainage points, then sculpt — cheekbones, jawline, the small muscles around the eyes. Scalp, arms, and hands are part of it, because the face does not hold tension in isolation. Most people fall asleep somewhere in the scalp massage.",
     includes: [
       "Manual lymphatic drainage",
@@ -115,8 +115,8 @@ export const services: readonly Service[] = [
     eyebrow: "The full arc",
     name: "90 minute Lymphatic",
     summary:
-      "Extra love and care. Individualized cleanse with specialized mask for your skins specific needs, lymphatic drainage, and a long finish with hot and cold stone gua sha and red light therapy.",
-    body: "The longest session, and the least hurried. A facial cleanse first, then lymphatic drainage through the head, shoulders, arms and hands. It closes with hot and cold stone gua sha and red light therapy — the part most people do not want to get up from.",
+      "Extra love and care. Individualized cleanse with specialized mask for your skin's specific needs, lymphatic drainage, and a long finish with hot stone gua sha and red light therapy.",
+    body: "The longest session, and the least hurried. A facial cleanse first, then lymphatic drainage through the head, shoulders, arms and hands. It closes with hot stone gua sha and red light therapy — the part most people do not want to get up from.",
     includes: [
       "Facial cleansing",
       "Manual lymphatic drainage",
