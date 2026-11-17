@@ -97,7 +97,7 @@ export const services: readonly Service[] = [
     eyebrow: "The signature bloom",
     name: "Xochi Signature Facial",
     summary:
-      "Draining the lymph and sculpting the face. Includes scalp, arm and hand massage.",
+      "A holistic facial combining lymphatic drainage, facial sculpting cleansing, and intentional massage. Includes scalp, arm, and hand massage for a complete experience of relaxation and skin renewal.",
     body: "The full practice. We work the lymph toward its natural drainage points, then sculpt — cheekbones, jawline, the small muscles around the eyes. Scalp, arms, and hands are part of it, because the face does not hold tension in isolation. Most people fall asleep somewhere in the scalp massage.",
     includes: [
       "Manual lymphatic drainage",
@@ -115,13 +115,13 @@ export const services: readonly Service[] = [
     eyebrow: "The full arc",
     name: "90 minute Lymphatic",
     summary:
-      "Extra love and care. Cleansing, lymphatic drainage, and a long finish with hot and cold stone gua sha and red light therapy.",
+      "Extra love and care. Individualized cleanse with specialized mask for your skins specific needs, lymphatic drainage, and a long finish with hot and cold stone gua sha and red light therapy.",
     body: "The longest session, and the least hurried. A facial cleanse first, then lymphatic drainage through the head, shoulders, arms and hands. It closes with hot and cold stone gua sha and red light therapy — the part most people do not want to get up from.",
     includes: [
       "Facial cleansing",
       "Manual lymphatic drainage",
       "Head, shoulder, arm and hand massage",
-      "Hot and cold stone gua sha",
+      "Hot stones and gua-sha",
       "Red light therapy",
     ],
     price: "$175",
@@ -190,7 +190,8 @@ export const anatomy = [
 ] as const;
 
 export const voice = {
-  thesis: "sometimes the glow starts with releasing what you've been carrying.",
+  thesis:
+    "sometimes, the most beautiful thing you can do for yourself is slow down to find yourself in your breath.",
   bloom: "every flower blooms from within.",
   softness: "a return to softness.",
   moon: "come back with the moon.",
@@ -208,9 +209,9 @@ export const philosophy = {
   welcome:
     "I've always believed that beauty isn't about adding more or changing yourself — it's about feeling good, and a lot of that has to do with clearing away what no longer serves us.",
   mission:
-    "In Nahuatl, Xochitl means flower. That is exactly my mission: to help your natural features bloom by supporting your body's internal filtration system.",
+    "Inspired by Xochiquetzal, the Aztec goddess associated with beauty, fertility, flowers, and feminine creativity, XOCHI celebrates a beauty that is delicate yet abundant, ever-changing yet deeply rooted.",
   why: "I started Xochi because I saw how much of a difference manual lymphatic drainage makes — not just for a sculpted jawline, but for how we feel.",
-  who: "Whether you're dealing with stubborn puffiness, sinus pressure, or you just need a deep nervous system reset, I'm here to help you come back to yourself.",
+  who: "A more intentional approach to skin health, facial massage, and lymphatic care. An invitation to slow down, release tension, and reconnect with yourself.",
   balance:
     "A balance between physical change and soulful restoration. A practice that helps release tension, encourage flow, and create space for us to soften into ourselves again.",
   essence:
@@ -236,12 +237,14 @@ export const letter = {
   valediction: "with care,",
 } as const;
 
-/** The name means flower. */
+/**
+ * The name, and where it comes from. Nicole rewrote this on 2026-11-16:
+ * it now points to Xochiquetzal rather than glossing "xochitl" (flower).
+ */
 export const etymology = {
-  word: "xochitl",
-  pronunciation: "/ˈsoːtʃitɬ/",
-  language: "nahuatl",
-  meaning: "it means flower.",
+  word: "XOCHI",
+  source: "INSPIRED BY XOCHIQUETZAL",
+  meaning: "a symbol of beauty, nature, and self-nurturing.",
   gloss:
     "And every flower blooms from within. Xochi is a practice rooted in that idea — that beauty isn't made, it's tended.",
 } as const;

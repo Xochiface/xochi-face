@@ -91,7 +91,7 @@ export default function HomePage() {
             {etymology.word}
           </p>
           <p className="font-label text-ink-soft mt-4 text-sm tracking-widest">
-            {etymology.pronunciation} · {etymology.language}
+            {etymology.source}
           </p>
           <h2 className="text-title text-ink mt-10">{etymology.meaning}</h2>
           <p className="text-lead text-ink-muted mx-auto mt-8 max-w-2xl italic">
@@ -120,7 +120,7 @@ export default function HomePage() {
             </div>
 
             <blockquote>
-              <p className="label-caps text-ink-soft">From the table</p>
+              <p className="label-caps text-ink-soft">A note from Nicole</p>
               <p className="text-quote font-poetic text-ink mt-8 font-light italic">
                 {voice.thesis}
               </p>

@@ -22,7 +22,7 @@ export default function PracticePage() {
             {voice.softness}
           </h1>
           <p className="text-lead text-ink-muted mt-8 max-w-xl italic">
-            Three ways to come to the table. The full hour, a shorter season, or
+            Three ways to come to the table. The full hour, an extended session, or
             your first visit.
           </p>
         </div>
