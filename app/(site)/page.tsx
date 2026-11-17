@@ -132,7 +132,7 @@ export default function HomePage() {
         </section>
 
         {/* -------------------------------------------------------------- */}
-        {/* The practice — three services                                   */}
+        {/* The practice — the services                                     */}
         {/* -------------------------------------------------------------- */}
         <section className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-36">
           <header className="mb-16 max-w-2xl">
@@ -143,12 +143,12 @@ export default function HomePage() {
             </p>
           </header>
 
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((s) => (
               <Link
                 key={s.slug}
                 href={`/practice#${s.slug}`}
-                className="bg-surface-raised shadow-rest hover:shadow-lift duration-calm ease-exhale group flex flex-col rounded-md border border-rule/40 p-8 transition-all hover:-translate-y-1"
+                className="sm:max-lg:first:col-span-2 bg-surface-raised shadow-rest hover:shadow-lift duration-calm ease-exhale group flex flex-col rounded-md border border-rule/40 p-8 transition-all hover:-translate-y-1"
               >
                 <div className="text-honey mb-6">
                   <Ornament name={s.ornament} size={36} />

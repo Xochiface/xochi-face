@@ -57,11 +57,11 @@ export default function BookPage() {
 
         {/* Choose a session ----------------------------------------------- */}
         <section className="mx-auto max-w-7xl px-5 pb-20 md:px-10 md:pb-24">
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((s) => (
               <div
                 key={s.slug}
-                className="bg-surface-raised shadow-rest flex flex-col rounded-md border border-rule/40 p-8"
+                className="sm:max-lg:first:col-span-2 bg-surface-raised shadow-rest flex flex-col rounded-md border border-rule/40 p-8"
               >
                 <div className="text-honey mb-6">
                   <Ornament name={s.ornament} size={36} />

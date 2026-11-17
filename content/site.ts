@@ -77,10 +77,13 @@ export type Service = {
 };
 
 /**
- * The four services live on Nicole's Square booking page, read directly from
- * it on 2026-09-30. Names, prices, and durations mirror Square exactly — if
- * these disagree with the booking page, the booking page is right and this
- * file is stale.
+ * The services live on Nicole's Square booking page, read directly from it on
+ * 2026-09-30. Names, prices, and durations mirror Square exactly — if these
+ * disagree with the booking page, the booking page is right and this file is
+ * stale.
+ *
+ * "30 minutes in heaven" (30 min, $80) is on Square but deliberately left off
+ * the site, at Jake's request on 2026-11-16.
  *
  * Note on the brand kit: it specifies a different menu again — "the ninety"
  * (90 min, $220), "the sixty" (60 min, $160), "the new moon" ($380/month).
@@ -124,22 +127,6 @@ export const services: readonly Service[] = [
     price: "$175",
     duration: "90 min",
     ornament: "xochitl",
-  },
-  {
-    slug: "thirty-minutes-in-heaven",
-    eyebrow: "A shorter season",
-    name: "30 minutes in heaven",
-    summary:
-      "All the benefits of a lymphatic facial, in half an hour. Includes décolleté, trapezius and neck massage.",
-    body: "For when the hour is not there. We start where the face actually drains — the neck, the trapezius, the décolleté — and work upward. Shorter, but not rushed.",
-    includes: [
-      "Manual lymphatic drainage",
-      "Décolleté and trapezius",
-      "Neck release",
-    ],
-    price: "$80",
-    duration: "30 min",
-    ornament: "six-petal",
   },
   {
     slug: "new-client-special",
