@@ -1,12 +1,11 @@
 # Editing the site by hand
 
 There's a private **✎ Edit** button at the bottom of every page. It lets you mark
-up the real site directly — rewrite text, nudge things, resize text, hide
-elements, pin notes — then package every change into one file for a developer
-to apply properly.
+up the real site directly — rewrite text, move things, resize text, delete
+elements, replace photos, pin notes — and **Save changes** publishes what it
+can straight into the site.
 
-**Nothing you do in edit mode changes the live site.** Edits only alter your own
-browser's view, as a draft. They become real when someone applies the package.
+Until you save, edits are a draft in your own browser and change nothing else.
 
 ## Opening it
 
@@ -27,10 +26,13 @@ Click **✎ Edit**. The bar at the bottom grows into the edit tools.
 - **Click** anything to select it. A gold outline and a small toolbar appear.
 - **Double-click** text (or press **✎ Text**) to rewrite it. **Enter** keeps the
   change, **Shift+Enter** adds a line break, **Esc** cancels.
-- **⠿ Move** — drag to reposition. Or use the **arrow keys** to nudge by 1px
-  (**Shift + arrow** for 10px).
+- **⠿ Move** — drag to reposition. **Hold Shift while dragging** to keep the
+  move perfectly straight — across or up-and-down, whichever way you've moved
+  further — with a gold guide line to show it. Or use the **arrow keys** to
+  nudge by 1px (**Shift + arrow** for 10px).
 - **A− / A+** — make the text smaller or larger.
-- **Hide** — fades the element out to mean "remove this". Press again to bring it back.
+- **Delete** — removes the element from the page. **↺ Undo delete** in the
+  bottom bar brings back the most recent one.
 - **Note** — pins a note beside the selection. **+ Note** in the bottom bar lets
   you click anywhere on the page to place one. Notes can be dragged.
 - **↑ Parent** — selects the block around the current selection. Use it to move
@@ -93,23 +95,34 @@ networks. If you're on a network Windows calls *Public*, it'll block the phone.
 While the dev site runs, anyone on the same network could open it. That's fine
 at home or on your own hotspot; don't run it on café or hotel Wi-Fi.
 
-## Saving and handing off
+## Saving
 
-**Save changes** packages every edit on every page into one file:
+When the site is running on this computer (including from your phone over the
+hotspot), **Save changes** publishes immediately:
 
-- **Locally:** it's written straight into the project at `edits/`. Just tell
-  the developer it's there.
-- **On the live site:** it downloads to your computer. Send the file over.
+- **Text** — your wording replaces the original in the site's code, exactly.
+- **Photos** — cropped to the shape of their spot and swapped in.
+- **Deletions** — removed, when the element is written out on its own in a page.
 
-Saving doesn't clear the draft, so you can keep going and save again. **Discard**
-throws the whole draft away; it asks you to click twice.
+The page updates in place, those edits leave the draft, and the change is
+saved as a step in the project's history — any save can be undone.
 
-Once a package has been applied to the site, press **Discard** to start fresh —
-the draft refers to the old version of the page.
+Everything else is saved to `edits/` and waits for Claude: **moves, text size,
+notes, video**, and anything that couldn't be pinned to exactly one place —
+wording used in several spots (a button label, say), text assembled from
+pieces (like "Austin, Texas, by appointment"), or something deleted out of a
+list of cards. The message after saving says how many are waiting; just tell
+Claude they're there. They stay in your draft until they're applied.
+
+**On the live site** nothing publishes: Save downloads a file to send over.
+
+**Discard** throws the whole draft away; it asks you to click twice.
 
 ## What to expect
 
 - **Text** comes through word for word, and is applied exactly.
+- **Capitals** — small labels on the site are *styled* in capitals. Type them
+  the way you'd write them ("A note from Nicole"); they'll still show in caps.
 - **Moves and size changes** are nudges at the screen size you made them on.
   They're read as design intent ("this sits lower", "this is bigger") and
   rebuilt properly so they also work on phones — not pasted in as pixel offsets.
@@ -120,10 +133,17 @@ the draft refers to the old version of the page.
 
 ## For developers
 
-Code: `components/edit-mode/` (toolbar, store, DOM helpers) and three
-development-only routes, all returning 404 in production:
+Code: `components/edit-mode/` (toolbar, store, DOM helpers),
+`lib/edits/apply.ts` (publishing on save), and three development-only routes,
+all returning 404 in production:
 
-- `app/api/edits/route.ts` — writes the edit package
+- `app/api/edits/route.ts` — publishes what it can via `lib/edits/apply.ts`,
+  then writes the whole package, with a `result` listing what was applied and
+  what is left, to `edits/`. Text is matched with the TypeScript parser against
+  string literals and JSX text; it must match exactly once (or once in the
+  edited page's own file). Touched files are committed unless they already
+  held uncommitted work. Anyone on the same network as the dev server can
+  reach this route — another reason not to run it on public Wi-Fi.
 - `app/api/edits/media/route.ts` — receives uploads; HEIC → JPEG via
   `heic-convert`, then `sharp` to orient, cap at 3200px (no enlargement) and
   strip all metadata

@@ -559,107 +559,114 @@ function EditTools() {
         />
       ) : null}
 
-      {/* Toast */}
-      {toast ? (
-        <div
-          {...ui}
-          role="status"
-          className="bg-sienna-900 text-bone-100 shadow-lift font-label fixed bottom-24 left-1/2 z-[96] -translate-x-1/2 rounded-md px-5 py-3 text-xs"
-        >
-          {toast}
-        </div>
-      ) : null}
-
-      {/* Bottom bar */}
+      {/* Toast, hint and bar stack in one column, so a two-row bar never
+          slides underneath the messages above it. */}
       <div
         {...ui}
-        className="fixed bottom-5 left-1/2 z-[95] flex max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-[1.75rem] bg-[#2c1503]/95 p-1.5 text-[#f7f1e2] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur"
+        className="pointer-events-none fixed bottom-5 left-1/2 z-[95] flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-col items-center gap-2"
       >
-        {!active ? (
-          <button type="button" className={`${btn} hover:bg-white/10`} onClick={() => setActive(true)}>
-            ✎ Edit
-            {changes ? (
-              <span className="ml-2 rounded-full bg-[#c8a053] px-2 py-0.5 text-[#2c1503]">{changes}</span>
-            ) : null}
-          </button>
-        ) : (
-          <>
-            <span className="font-label px-2 text-[0.625rem] uppercase tracking-[0.18em] text-[#dcbc82]">
-              Edit mode
-            </span>
+        {/* Toast */}
+        {toast ? (
+          <div
+            {...ui}
+            role="status"
+            className="bg-sienna-900 text-bone-100 shadow-lift font-label pointer-events-auto max-w-xl rounded-md px-5 py-3 text-center text-xs"
+          >
+            {toast}
+          </div>
+        ) : null}
 
-            <div className="flex items-center gap-0.5 rounded-pill bg-white/5 p-0.5">
-              {PAGES.map(([href, label]) => (
-                <button
-                  key={href}
-                  type="button"
-                  onClick={() => {
-                    setSelection(null);
-                    router.push(href);
-                  }}
-                  className={`${btn} ${pathname === href ? "bg-[#f7f1e2] text-[#2c1503]" : "hover:bg-white/10"}`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+        {active && !selection && !placingNote ? (
+          <p
+            {...ui}
+            className="font-label hidden rounded-pill bg-[#2c1503]/80 px-3 py-1 text-center text-[0.625rem] tracking-wide text-[#ece1cb] sm:block"
+          >
+            Click to select · double-click to rewrite · drag ⠿ to move (hold shift to keep it straight) · arrows nudge · Esc to deselect
+          </p>
+        ) : null}
 
-            <button
-              type="button"
-              onClick={() => setPlacingNote((v) => !v)}
-              className={`${btn} ${placingNote ? "bg-[#c8a053] text-[#2c1503]" : "hover:bg-white/10"}`}
-            >
-              {placingNote ? "Click to place note" : "+ Note"}
-            </button>
-
-            {Object.keys(page?.deleted ?? {}).length ? (
-              <button type="button" onClick={undoDelete} className={`${btn} hover:bg-white/10`}>
-                ↺ Undo delete
-              </button>
-            ) : null}
-
-            <button
-              type="button"
-              disabled={saving || !changes}
-              onClick={save}
-              className={`${btn} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82] disabled:opacity-40`}
-            >
-              {saving ? "Publishing…" : `Save changes${changes ? ` (${changes})` : ""}`}
-            </button>
-
-            <button
-              type="button"
-              onClick={discard}
-              disabled={!changes}
-              className={`${btn} hover:bg-white/10 disabled:opacity-30 ${confirmDiscard ? "text-[#e8a090]" : ""}`}
-            >
-              {confirmDiscard ? "Click again to discard all" : "Discard"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setActive(false);
-                setSelection(null);
-                setPlacingNote(false);
-                setHover(null);
-              }}
-              className={`${btn} hover:bg-white/10`}
-            >
-              Done
-            </button>
-          </>
-        )}
-      </div>
-
-      {active && !selection && !placingNote ? (
-        <p
+        {/* Bottom bar */}
+        <div
           {...ui}
-          className="font-label pointer-events-none fixed bottom-[4.75rem] left-1/2 z-[95] hidden -translate-x-1/2 sm:block whitespace-nowrap rounded-pill bg-[#2c1503]/80 px-3 py-1 text-[0.625rem] tracking-wide text-[#ece1cb]"
+          className="pointer-events-auto flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-[1.75rem] bg-[#2c1503]/95 p-1.5 text-[#f7f1e2] shadow-[0_12px_40px_-12px_rgba(0,0,0,0.5)] backdrop-blur"
         >
-          Click to select · double-click to rewrite · drag ⠿ to move (hold shift to keep it straight) · arrows nudge · Esc to deselect
-        </p>
-      ) : null}
+          {!active ? (
+            <button type="button" className={`${btn} hover:bg-white/10`} onClick={() => setActive(true)}>
+              ✎ Edit
+              {changes ? (
+                <span className="ml-2 rounded-full bg-[#c8a053] px-2 py-0.5 text-[#2c1503]">{changes}</span>
+              ) : null}
+            </button>
+          ) : (
+            <>
+              <span className="font-label px-2 text-[0.625rem] uppercase tracking-[0.18em] text-[#dcbc82]">
+                Edit mode
+              </span>
+
+              <div className="flex items-center gap-0.5 rounded-pill bg-white/5 p-0.5">
+                {PAGES.map(([href, label]) => (
+                  <button
+                    key={href}
+                    type="button"
+                    onClick={() => {
+                      setSelection(null);
+                      router.push(href);
+                    }}
+                    className={`${btn} ${pathname === href ? "bg-[#f7f1e2] text-[#2c1503]" : "hover:bg-white/10"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setPlacingNote((v) => !v)}
+                className={`${btn} ${placingNote ? "bg-[#c8a053] text-[#2c1503]" : "hover:bg-white/10"}`}
+              >
+                {placingNote ? "Click to place note" : "+ Note"}
+              </button>
+
+              {Object.keys(page?.deleted ?? {}).length ? (
+                <button type="button" onClick={undoDelete} className={`${btn} hover:bg-white/10`}>
+                  ↺ Undo delete
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                disabled={saving || !changes}
+                onClick={save}
+                className={`${btn} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82] disabled:opacity-40`}
+              >
+                {saving ? "Publishing…" : `Save changes${changes ? ` (${changes})` : ""}`}
+              </button>
+
+              <button
+                type="button"
+                onClick={discard}
+                disabled={!changes}
+                className={`${btn} hover:bg-white/10 disabled:opacity-30 ${confirmDiscard ? "text-[#e8a090]" : ""}`}
+              >
+                {confirmDiscard ? "Click again to discard all" : "Discard"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setActive(false);
+                  setSelection(null);
+                  setPlacingNote(false);
+                  setHover(null);
+                }}
+                className={`${btn} hover:bg-white/10`}
+              >
+                Done
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </>,
     document.body,
   );
