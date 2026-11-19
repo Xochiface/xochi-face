@@ -47,13 +47,9 @@ export const site = {
   instagram: "https://www.instagram.com/xochiface/",
   instagramHandle: "@xochiface",
 
-  /**
-   * A client's Instagram post places the studio in "South Austin off William
-   * Cannon". That is third-hand and not precise enough to publish, so the
-   * address stays PENDING until Nicole confirms it.
-   */
-  address: PENDING,
-  email: PENDING,
+  /** Confirmed by Jake on 2026-11-18, from edit mode. */
+  address: "12919 Nutty Brown Rd, Austin, TX 78737",
+  email: "nicole@xochifacials.com",
   hours: PENDING,
 };
 
