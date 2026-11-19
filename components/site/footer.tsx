@@ -41,7 +41,7 @@ export function Footer() {
           </div>
 
           <nav className="flex flex-col gap-4">
-            <p className="label-caps text-ink-soft">The garden</p>
+            <p className="label-caps text-ink-soft">XOCHI</p>
             {nav.map((item) => (
               <Link
                 key={item.href}
