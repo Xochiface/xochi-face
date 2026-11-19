@@ -40,7 +40,9 @@ export const site = {
   positioning: "Lymphatic drainage facial specialist",
   location: "Austin, Texas",
   availability: "by appointment",
-  parent: "Xochi Garden",
+  /** The name in the footer's closing line. Was "Xochi Garden" until Jake
+   *  changed it in edit mode on 2026-11-19. */
+  parent: "Xochi Facials",
   year: 2026,
 
   /** Booking lives in content/booking.ts — one owner, so it cannot drift. */
@@ -56,7 +58,7 @@ export const site = {
 export const nav = [
   { href: "/about", label: "About" },
   { href: "/letter", label: "A letter" },
-  { href: "/book", label: "Book" },
+  { href: "/book", label: "Booking" },
 ] as const;
 
 export type Service = {
