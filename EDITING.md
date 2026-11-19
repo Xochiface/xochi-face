@@ -42,7 +42,7 @@ Click **✎ Edit**. The bar at the bottom grows into the edit tools.
 - **↑ Parent** — selects the block around the current selection. Use it to move
   a whole card or section rather than one line.
 - **Reset** — undoes every change to the selected element.
-- **Home / About / Letter / Book** — switch pages without leaving edit mode.
+- **Home / About / Book** — switch pages without leaving edit mode.
   In edit mode, clicking the site's own links selects them instead of following them.
 
 ## Adding new things

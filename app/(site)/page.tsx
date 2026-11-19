@@ -249,7 +249,7 @@ export default function HomePage() {
                 {letter.pullQuote}
               </p>
               <Link
-                href="/letter"
+                href="/about#letter"
                 className="label-caps text-ink-muted hover:text-ink duration-quick ease-exhale group inline-flex items-center gap-3 transition-colors"
               >
                 Read the letter

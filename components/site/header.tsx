@@ -72,7 +72,8 @@ export function Header({ solid }: { solid?: boolean }) {
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between gap-4 px-5 md:h-24 md:px-10">
           {/* Left — nav on desktop, menu toggle on mobile */}
           <nav className="hidden flex-1 items-center gap-8 md:flex">
-            {nav.slice(0, 2).map((item) => (
+            {/* Booking has its own button on the right. */}
+            {nav.filter((item) => item.href !== "/book").map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -157,11 +158,7 @@ export function Header({ solid }: { solid?: boolean }) {
               <span className="text-accent-honey">
                 <Ornament
                   name={
-                    item.href === "/about"
-                      ? "marigold"
-                      : item.href === "/letter"
-                        ? "branch"
-                        : "double-moon"
+                    item.href === "/about" ? "marigold" : "double-moon"
                   }
                   size={26}
                 />

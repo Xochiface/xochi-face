@@ -72,7 +72,6 @@ import {
 const PAGES: [string, string][] = [
   ["/", "Home"],
   ["/about", "About"],
-  ["/letter", "Letter"],
   ["/book", "Book"],
 ];
 

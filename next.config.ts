@@ -21,9 +21,13 @@ function localAddresses(): string[] {
 const nextConfig: NextConfig = {
   allowedDevOrigins: localAddresses(),
 
-  /** /practice became /about on 2026-11-18; services moved to /book. */
+  /** /practice became /about on 2026-11-18 (services moved to /book), and
+   *  the letter moved into /about on 2026-11-19. */
   async redirects() {
-    return [{ source: "/practice", destination: "/about", permanent: true }];
+    return [
+      { source: "/practice", destination: "/about", permanent: true },
+      { source: "/letter", destination: "/about#letter", permanent: true },
+    ];
   },
 };
 
