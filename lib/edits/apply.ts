@@ -16,11 +16,15 @@ import ts from "typescript";
  *              or break the syntax around it.
  *   Photos   — cropped to the shape of the slot they replace and written over
  *              its file in assets/photos/.
- *   Deletes  — only an element written out literally in a page, like
- *              <p>Some words</p>. Anything built from data (a card from a
- *              list) or wrapped in logic is left for a person.
+ *   Deletes  — an element whose words are written in a page, like
+ *              <p>Some words</p>, or come from the shared content file, like
+ *              <h2>{voice.bloom}</h2>. Anything built from a list (one card
+ *              of several) or wrapped in logic is left for a person.
+ *   Colours  — the same elements, when their className is a plain string: the
+ *              old colour class for that part (text, fill or border) is
+ *              swapped for the new one.
  *
- * Everything else — moves, size changes, video, notes, and anything that
+ * Everything else — moves, size changes, video, notes, added items, and anything that
  * didn't match exactly once — stays in the package for a developer, and the
  * result says so. Touched files are committed, so every save can be undone,
  * unless they already held someone's uncommitted work.
@@ -46,11 +50,12 @@ type PackagePage = {
     needs: { width: number; height: number } | null;
   }[];
   deleted?: { element: Ref; text: string }[];
+  colors?: { element: Ref; text: string; target: "text" | "fill" | "border"; className: string }[];
 };
 
 export type Outcome = { page: string; selector: string; what: string };
 export type ApplyResult = {
-  applied: (Outcome & { kind: "text" | "media" | "delete" })[];
+  applied: (Outcome & { kind: "text" | "media" | "delete" | "color" })[];
   skipped: (Outcome & { why: string })[];
   files: string[];
   commit: string | null;
@@ -88,7 +93,7 @@ export async function applyPackage(pkg: {
         continue;
       }
       const entry = { page, selector: edit.element.selector, what, kind: "text" as const };
-      queue(pending, found.file, { start: found.start, end: found.end, text: encode(found, edited), entry });
+      queue(pending, found.file, { start: found.start, end: found.end, text: encode(found, edited), entries: [entry] });
       result.applied.push(entry);
     }
   }
@@ -99,7 +104,7 @@ export async function applyPackage(pkg: {
       const what = `<${del.element.tag}> “${clip(del.text || del.element.text)}”`;
       const found = pick(
         sources.flatMap((s) =>
-          s.elements.filter((e) => e.tag === del.element.tag && same(e.text, del.text)),
+          s.elements.filter((e) => e.deletable && sameTag(e.tag, del.element.tag) && same(e.text, del.text)),
         ),
         page,
       );
@@ -108,9 +113,42 @@ export async function applyPackage(pkg: {
         continue;
       }
       const entry = { page, selector: del.element.selector, what, kind: "delete" as const };
-      queue(pending, found.file, { start: found.start, end: found.end, text: "", entry });
+      queue(pending, found.file, { ...found.span, text: "", entries: [entry] });
       result.applied.push(entry);
     }
+  }
+
+  /* Colours ---------------------------------------------------------------- */
+  // Several colours on one element (text and fill, say) rewrite the same
+  // className, so they're gathered per element and written once.
+  const recolours = new Map<string, { at: Element; classes: string[]; entries: ApplyResult["applied"] }>();
+  for (const [page, p] of pages) {
+    for (const c of p.colors ?? []) {
+      const selector = `${c.element.selector}|${c.target}`;
+      const what = `${c.target} of <${c.element.tag}> “${clip(c.text || c.element.text)}” → ${c.className}`;
+      const found = pick(
+        sources.flatMap((s) =>
+          s.elements.filter((e) => e.className && sameTag(e.tag, c.element.tag) && same(e.text, c.text)),
+        ),
+        page,
+      );
+      if (typeof found === "string") {
+        result.skipped.push({ page, selector, what, why: found });
+        continue;
+      }
+      const key = `${found.file}:${found.className!.start}`;
+      const group = recolours.get(key) ?? { at: found, classes: found.className!.value.split(/\s+/).filter(Boolean), entries: [] };
+      group.classes = swapColour(group.classes, c.target, c.className);
+      const entry = { page, selector, what, kind: "color" as const };
+      group.entries.push(entry);
+      recolours.set(key, group);
+      result.applied.push(entry);
+    }
+  }
+  for (const { at, classes, entries } of recolours.values()) {
+    const cls = at.className!;
+    const q = cls.quote;
+    queue(pending, at.file, { start: cls.start, end: cls.end, text: `${q}${classes.join(" ")}${q}`, entries });
   }
 
   /* Write source files ---------------------------------------------------- */
@@ -129,8 +167,10 @@ export async function applyPackage(pkg: {
       if (i > 0 && s.end > ordered[i - 1].start) clash.add(s).add(ordered[i - 1]);
     });
     for (const s of clash) {
-      result.applied = result.applied.filter((a) => a !== s.entry);
-      result.skipped.push({ ...s.entry, why: "Overlaps another change in the same place." });
+      for (const entry of s.entries) {
+        result.applied = result.applied.filter((a) => a !== entry);
+        result.skipped.push({ ...entry, why: "Overlaps another change in the same place." });
+      }
     }
     const clean = ordered.filter((s) => !clash.has(s));
     if (!clean.length) continue;
@@ -199,19 +239,63 @@ type Literal = {
   value: string;
 };
 
-type Element = { file: string; start: number; end: number; tag: string; text: string };
+type Element = {
+  file: string;
+  /** The element itself, widened to whole lines where it has them. */
+  span: { start: number; end: number };
+  tag: string;
+  /** The words it renders, when they can be known from the code. */
+  text: string;
+  /** Sitting directly among other JSX children, so removable on its own. */
+  deletable: boolean;
+  /** className="…" when it's a plain string. */
+  className: { start: number; end: number; quote: string; value: string } | null;
+};
 
 type Source = { file: string; text: string; literals: Literal[]; elements: Element[] };
 
 async function loadSources(): Promise<Source[]> {
   const files: string[] = [];
   for (const dir of SOURCE_DIRS) await walk(dir, files);
-  return Promise.all(
+  const parsed = await Promise.all(
     files.map(async (file) => {
       const text = await readFile(path.join(ROOT, file), "utf8");
-      return { file, text, ...scan(file, text) };
+      const sf = ts.createSourceFile(
+        file,
+        text,
+        ts.ScriptTarget.Latest,
+        true,
+        file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      );
+      return { file, text, sf };
     }),
   );
+  // First pass: every "object.key" string the content files define, so an
+  // element like <h2>{voice.bloom}</h2> can be matched by the words it shows.
+  const values = new Map<string, string>();
+  for (const { sf } of parsed) collectValues(sf, values);
+  return parsed.map(({ file, text, sf }) => ({ file, text, ...scan(file, text, sf, values) }));
+}
+
+/** `export const voice = { bloom: "…" }` → "voice.bloom" ↦ "…". One level deep. */
+function collectValues(sf: ts.SourceFile, out: Map<string, string>) {
+  for (const stmt of sf.statements) {
+    if (!ts.isVariableStatement(stmt)) continue;
+    for (const decl of stmt.declarationList.declarations) {
+      let init = decl.initializer;
+      while (init && (ts.isAsExpression(init) || ts.isSatisfiesExpression(init) || ts.isParenthesizedExpression(init))) {
+        init = init.expression;
+      }
+      if (!init || !ts.isObjectLiteralExpression(init) || !ts.isIdentifier(decl.name)) continue;
+      for (const prop of init.properties) {
+        if (!ts.isPropertyAssignment(prop) || !(ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name))) continue;
+        const v = prop.initializer;
+        if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) {
+          out.set(`${decl.name.text}.${prop.name.text}`, v.text);
+        }
+      }
+    }
+  }
 }
 
 async function walk(dir: string, out: string[]) {
@@ -229,14 +313,7 @@ async function walk(dir: string, out: string[]) {
   }
 }
 
-function scan(file: string, text: string) {
-  const sf = ts.createSourceFile(
-    file,
-    text,
-    ts.ScriptTarget.Latest,
-    true,
-    file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  );
+function scan(file: string, text: string, sf: ts.SourceFile, values: Map<string, string>) {
   const literals: Literal[] = [];
   const elements: Element[] = [];
 
@@ -270,15 +347,36 @@ function scan(file: string, text: string) {
       });
     }
 
-    // An element written out literally, sitting directly among other JSX
-    // children — the only kind that can be removed without touching logic.
-    if (ts.isJsxElement(node) && (ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent))) {
+    // An element whose words are knowable from the code: plain JSX text,
+    // and/or {object.key} values from the content files. Elements fed from a
+    // list ({s.name} inside a .map) can't be told apart, so aren't recorded.
+    if (ts.isJsxElement(node)) {
       const tag = node.openingElement.tagName.getText(sf);
       const kids = node.children.filter((c) => !(ts.isJsxText(c) && c.containsOnlyTriviaWhiteSpaces));
-      if (/^[a-z]/.test(tag) && kids.length && kids.every((c) => ts.isJsxText(c))) {
-        const value = kids.map((c) => jsxValue(text.slice(c.pos, c.end))).join(" ");
-        const span = wholeLines(text, node.getStart(sf), node.getEnd());
-        elements.push({ file, ...span, tag, text: value });
+      const words = kids.map((c) => {
+        if (ts.isJsxText(c)) return jsxValue(text.slice(c.pos, c.end));
+        if (ts.isJsxExpression(c) && c.expression && ts.isPropertyAccessExpression(c.expression)) {
+          return values.get(c.expression.getText(sf)) ?? null;
+        }
+        return null;
+      });
+      if (kids.length && words.every((w) => w !== null)) {
+        const attr = node.openingElement.attributes.properties.find(
+          (a): a is ts.JsxAttribute => ts.isJsxAttribute(a) && a.name.getText(sf) === "className",
+        );
+        const init = attr?.initializer;
+        const className =
+          init && ts.isStringLiteral(init)
+            ? { start: init.getStart(sf), end: init.getEnd(), quote: text[init.getStart(sf)], value: init.text }
+            : null;
+        elements.push({
+          file,
+          span: wholeLines(text, node.getStart(sf), node.getEnd()),
+          tag,
+          text: words.join(" "),
+          deletable: ts.isJsxElement(node.parent) || ts.isJsxFragment(node.parent),
+          className,
+        });
       }
     }
     ts.forEachChild(node, visit);
@@ -390,8 +488,29 @@ type Splice = {
   start: number;
   end: number;
   text: string;
-  entry: ApplyResult["applied"][number];
+  entries: ApplyResult["applied"];
 };
+
+/** The DOM reports <Link> as an <a>. */
+function sameTag(codeTag: string, domTag: string) {
+  return codeTag === domTag || (codeTag === "Link" && domTag === "a");
+}
+
+/** Colour names the site's Tailwind theme defines — so "text-ink" is a colour
+ *  but "text-body" (a size) is not, and "border-rule/40" is but "border-t" is not. */
+const COLOUR =
+  "(?:bone-\\d+|sienna-\\d+|honey(?:-soft)?|sage|blush|petal|ink(?:-muted|-soft)?|surface(?:-raised|-sunken)?|rule|accent-(?:honey|sage|blush)|accent(?:-foreground)?|primary(?:-foreground)?|secondary(?:-foreground)?|muted(?:-foreground)?|background|foreground|card(?:-foreground)?|popover(?:-foreground)?|destructive|border|input|ring|white|black|transparent|current|inherit|\\[(?:#|rgb|hsl|oklch|color:|var\\().*\\])(?:/\\d+)?";
+
+const PREFIX = { text: "text", fill: "bg", border: "border" } as const;
+
+/** Swap one part's colour class, leaving size, spacing and everything else. */
+function swapColour(classes: string[], target: "text" | "fill" | "border", next: string) {
+  const old = new RegExp(`^(?:[a-z-]+:)*${PREFIX[target]}-${COLOUR}$`);
+  // Only unprefixed classes are replaced; hover:/md: variants are left alone.
+  const kept = classes.filter((c) => !(old.test(c) && !c.includes(":")));
+  if (target === "border" && !kept.some((c) => /^border(?:-[trblxy])?(?:-\d+)?$/.test(c))) kept.push("border");
+  return [...kept, next];
+}
 
 function queue(map: Map<string, Splice[]>, file: string, splice: Splice) {
   const list = map.get(file) ?? [];

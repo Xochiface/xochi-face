@@ -1,3 +1,4 @@
+import { cssValue, styleProp, type ColorTarget, type ColorValue } from "./palette";
 import type { ElementRef, PageEdits } from "./store";
 
 /** Everything belonging to the edit tools carries this, so the tools never
@@ -121,6 +122,11 @@ export function applyPage(page: PageEdits | undefined, { includeText }: { includ
   for (const [sel, m] of Object.entries(page.media ?? {})) {
     const el = find(sel);
     if (el instanceof HTMLImageElement) applyMedia(el, m.kind, m.preview);
+  }
+
+  for (const c of Object.values(page.colors ?? {})) {
+    const el = find(c.ref.selector);
+    if (el) setColor(el, c.target, c.value);
   }
 
   for (const sel of Object.keys(page.deleted ?? {})) {
@@ -277,6 +283,15 @@ export function computedFontPx(el: Element): number {
   return parseFloat(getComputedStyle(el).fontSize) || 16;
 }
 
+export function setColor(el: HTMLElement, target: ColorTarget, value: ColorValue | null) {
+  el.style[styleProp(target)] = value ? cssValue(value) : "";
+  // A border colour on an element with no border would show nothing.
+  if (target === "border" && value && getComputedStyle(el).borderStyle === "none") {
+    el.style.borderStyle = "solid";
+    el.style.borderWidth = "1px";
+  }
+}
+
 export function setDeleted(el: HTMLElement, deleted: boolean) {
   el.style.display = deleted ? "none" : "";
 }
@@ -350,6 +365,11 @@ export function resetElement(el: HTMLElement, originalText?: string) {
   el.style.transform = "";
   el.style.fontSize = "";
   el.style.display = "";
+  el.style.color = "";
+  el.style.backgroundColor = "";
+  el.style.borderColor = "";
+  el.style.borderStyle = "";
+  el.style.borderWidth = "";
   if (originalText !== undefined) el.innerText = originalText;
   markOriginal(el, null);
   if (el instanceof HTMLImageElement) restoreMedia(el);

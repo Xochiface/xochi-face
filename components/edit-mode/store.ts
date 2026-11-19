@@ -1,3 +1,5 @@
+import type { ColorTarget, ColorValue } from "./palette";
+
 /**
  * Edit-mode state.
  *
@@ -78,6 +80,36 @@ export type SizeEdit = { ref: ElementRef; basePx: number; factor: number };
  *  found in the code — ElementRef.text is clipped. */
 export type DeleteEdit = { ref: ElementRef; text: string };
 
+/** A colour set on part of an element. Keyed by selector + target. */
+export type ColorEdit = {
+  ref: ElementRef;
+  /** Full original wording, for finding the element in the code. */
+  text: string;
+  target: ColorTarget;
+  value: ColorValue;
+};
+
+/** Something new dropped onto the page: placed by hand, built in by Claude. */
+export type Insert = {
+  id: string;
+  kind: "photo" | "ornament" | "border" | "logo" | "text";
+  /** Ornament or border name; "mark" | "wordmark" for logos;
+   *  "heading" | "paragraph" | "label" for text. */
+  name: string;
+  /** Top-left, in page pixels. */
+  x: number;
+  y: number;
+  /** Width in pixels; height follows the item. */
+  w: number;
+  color: ColorValue | null;
+  text: string;
+  /** Uploaded photo: preview URL and the file in edits/media/. */
+  src: string | null;
+  file: string | null;
+  /** What it was dropped on, so it can be found in the code. */
+  near: ElementRef | null;
+};
+
 /** A photo or video swapped into an image slot. */
 export type MediaEdit = {
   ref: ElementRef;
@@ -110,6 +142,8 @@ export type PageEdits = {
   size: Record<string, SizeEdit>;
   deleted: Record<string, DeleteEdit>;
   media: Record<string, MediaEdit>;
+  colors: Record<string, ColorEdit>;
+  inserts: Insert[];
   notes: Note[];
 };
 
@@ -122,7 +156,7 @@ const EDITS_KEY = "xochi-edits-v1";
 const EMPTY: EditState = { pages: {}, lastSaved: null };
 
 export function emptyPage(): PageEdits {
-  return { text: {}, moves: {}, size: {}, deleted: {}, media: {}, notes: [] };
+  return { text: {}, moves: {}, size: {}, deleted: {}, media: {}, colors: {}, inserts: [], notes: [] };
 }
 
 let state: EditState = EMPTY;
@@ -197,6 +231,13 @@ export function removeApplied(applied: { page: string; selector: string; kind: s
   for (const a of applied) {
     const p = pages[a.page];
     if (!p) continue;
+    if (a.kind === "color") {
+      // Colour edits are keyed "selector|target"; the reply carries the key.
+      const colors = { ...p.colors };
+      delete colors[a.selector];
+      pages[a.page] = { ...p, colors };
+      continue;
+    }
     const field = a.kind === "text" ? "text" : a.kind === "media" ? "media" : "deleted";
     const next = { ...p[field] };
     delete next[a.selector];
@@ -228,6 +269,8 @@ export function countChanges(s: EditState): number {
       Object.keys(p.size).length +
       Object.keys(p.deleted ?? {}).length +
       Object.keys(p.media ?? {}).length +
+      Object.keys(p.colors ?? {}).length +
+      (p.inserts ?? []).length +
       p.notes.filter((note) => note.text.trim()).length,
     0,
   );

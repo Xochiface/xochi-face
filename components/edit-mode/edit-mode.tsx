@@ -4,6 +4,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 
+import { ColorPanel } from "./color-panel";
+
 import {
   UI_ATTR,
   applyMedia,
@@ -21,12 +23,15 @@ import {
   resetElement,
   restoreMedia,
   setBodyCursor,
+  setColor,
   setDeleted,
   setFontPx,
   setTranslate,
   slotOf,
   type Box,
 } from "./dom";
+import { AddPanel, DEFAULT_WIDTH, InsertItem, type AddChoice } from "./inserts";
+import { classFor, type ColorTarget, type ColorValue } from "./palette";
 import {
   accessStore,
   clearAll,
@@ -38,6 +43,7 @@ import {
   removeApplied,
   updatePage,
   type EditState,
+  type Insert,
   type MediaEdit,
   type Note,
 } from "./store";
@@ -47,7 +53,8 @@ import {
  *
  * A button at the bottom of every page. In edit mode you can click any text to
  * select it, double-click to rewrite it, drag to move it (Shift keeps the drag
- * straight), resize it, delete it, replace photos, and pin notes anywhere.
+ * straight), resize it, recolour it, delete it, replace photos, add new
+ * photos, logos, ornaments and text ("+ Add"), and pin notes anywhere.
  * Edits are a working draft kept in this browser until "Save changes":
  *
  *   - running locally (npm run dev): text, photos and simple deletions are
@@ -93,6 +100,11 @@ function EditTools() {
   const [rawSelection, setSelection] = useState<Selection | null>(null);
   const [hover, setHover] = useState<Box | null>(null);
   const [placingNote, setPlacingNote] = useState(false);
+  // "+ Add": the menu, the item waiting to be placed, and the selected one.
+  const [addOpen, setAddOpen] = useState(false);
+  const [placing, setPlacing] = useState<Omit<Insert, "id" | "x" | "y" | "near"> | null>(null);
+  const [selectedInsert, setSelectedInsert] = useState<string | null>(null);
+  const [colorsOpen, setColorsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -114,9 +126,9 @@ function EditTools() {
   }, [page]);
 
   useEffect(() => {
-    setBodyCursor(active && placingNote ? "crosshair" : "");
+    setBodyCursor(active && (placingNote || placing) ? "crosshair" : "");
     return () => setBodyCursor("");
-  }, [active, placingNote]);
+  }, [active, placingNote, placing]);
 
   /* ---------------------------------------------------------------------- */
   /* Recording edits                                                         */
@@ -336,9 +348,86 @@ function EditTools() {
         delete next[k];
         return next;
       };
-      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), deleted: strip(p.deleted), media: strip(p.media) };
+      const colors = Object.fromEntries(Object.entries(p.colors).filter(([key]) => !key.startsWith(`${k}|`)));
+      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), deleted: strip(p.deleted), media: strip(p.media), colors };
     });
     refresh(el);
+  }
+
+  /* Colour ---------------------------------------------------------------- */
+
+  const colorKey = (selector: string, target: ColorTarget) => `${selector}|${target}`;
+
+  function currentColor(el: HTMLElement, target: ColorTarget): ColorValue | null {
+    const key = colorKey(describe(el).selector, target);
+    return getState().pages[pathname]?.colors?.[key]?.value ?? null;
+  }
+
+  function recolor(el: HTMLElement, target: ColorTarget, value: ColorValue | null) {
+    const ref = describe(el);
+    const key = colorKey(ref.selector, target);
+    const text = el.dataset.xochiOriginal ?? plainText(el);
+    setColor(el, target, value);
+    updatePage(pathname, (p) => {
+      const colors = { ...p.colors };
+      if (value) colors[key] = { ref, text, target, value };
+      else delete colors[key];
+      return { ...p, colors };
+    });
+  }
+
+  /* Adding new things ------------------------------------------------------ */
+
+  function chooseToAdd(choice: AddChoice) {
+    setAddOpen(false);
+    setSelection(null);
+    const base = { kind: choice.kind, name: choice.name, w: DEFAULT_WIDTH[choice.kind], color: null, text: "", src: null, file: null };
+    if (choice.kind === "text") {
+      setPlacing({ ...base, text: choice.name === "label" ? "A new label" : choice.name === "heading" ? "a new heading." : "New words here." });
+      return;
+    }
+    if (choice.kind !== "photo") {
+      setPlacing(base);
+      return;
+    }
+    pickFile("image/*", async (file) => {
+      setToast(`Uploading ${file.name}…`);
+      const body = new FormData();
+      body.append("file", file);
+      body.append("slot", "added");
+      let res: Response;
+      try {
+        res = await fetch("/api/edits/media", { method: "POST", body });
+      } catch {
+        flash("Upload failed — is the dev server still running?");
+        return;
+      }
+      if (res.status === 404) {
+        flash("Photo uploads only work while running the site locally.", 8000);
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok || data.kind !== "image") {
+        flash(data.error ?? "That needs to be a photo.");
+        return;
+      }
+      setPlacing({ ...base, src: data.preview, file: data.file });
+      flash("Now click where the photo should go.", 5000);
+    });
+  }
+
+  function placeAt(pageX: number, pageY: number, near: Element | null) {
+    if (!placing) return;
+    const item: Insert = {
+      ...placing,
+      id: Math.random().toString(36).slice(2, 9),
+      x: Math.round(pageX),
+      y: Math.round(pageY),
+      near: near && !isEditUi(near) ? describe(near) : null,
+    };
+    updatePage(pathname, (p) => ({ ...p, inserts: [...p.inserts, item] }));
+    setPlacing(null);
+    setSelectedInsert(item.id);
   }
 
   function addNote(x: number, y: number, near: Element | null) {
@@ -366,6 +455,12 @@ function EditTools() {
       if (isEditUi(target) || (target as HTMLElement).isContentEditable) return;
       e.preventDefault();
       e.stopPropagation();
+      setColorsOpen(false);
+      setSelectedInsert(null);
+      if (placing) {
+        placeAt(e.pageX, e.pageY, target);
+        return;
+      }
       if (placingNote) {
         addNote(e.pageX, e.pageY, target);
         setPlacingNote(false);
@@ -394,7 +489,11 @@ function EditTools() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setPlacingNote(false);
+        setPlacing(null);
+        setAddOpen(false);
+        setColorsOpen(false);
         setSelection(null);
+        setSelectedInsert(null);
         return;
       }
       const step = e.shiftKey ? 10 : 1;
@@ -432,7 +531,7 @@ function EditTools() {
     };
     // The handlers read the latest selection, page and note mode on each run.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, placingNote, pathname, rawSelection]);
+  }, [active, placingNote, placing, pathname, rawSelection]);
 
   /* ---------------------------------------------------------------------- */
   /* Save / discard                                                          */
@@ -512,8 +611,24 @@ function EditTools() {
         <NoteCard key={note.id} note={note} path={pathname} />
       ))}
 
+      {/* Things added with "+ Add" */}
+      {page?.inserts.map((item) => (
+        <InsertItem
+          key={item.id}
+          item={item}
+          path={pathname}
+          active={active}
+          selected={selectedInsert === item.id}
+          onSelect={(id) => {
+            setSelectedInsert(id);
+            setSelection(null);
+          }}
+          onGuide={setGuide}
+        />
+      ))}
+
       {/* Hover + selection outlines */}
-      {active && hover && !placingNote ? (
+      {active && hover && !placingNote && !placing ? (
         <div
           {...ui}
           className="pointer-events-none fixed z-[90] rounded-sm outline outline-1 outline-dashed outline-[#c8a053]"
@@ -543,7 +658,23 @@ function EditTools() {
           onReplace={() => {
             if (selection.el instanceof HTMLImageElement) replaceMedia(selection.el);
           }}
-          onClose={() => setSelection(null)}
+          onColor={() => setColorsOpen((v) => !v)}
+          onClose={() => {
+            setSelection(null);
+            setColorsOpen(false);
+          }}
+        />
+      ) : null}
+
+      {active && selection && colorsOpen ? (
+        <ColorPanel
+          current={(target) => currentColor(selection.el, target)}
+          onPick={(target, value) => recolor(selection.el, target, value)}
+          onClose={() => setColorsOpen(false)}
+          style={{
+            top: Math.min(Math.max(selection.box.top + 8, 64), window.innerHeight - 340),
+            left: Math.max(8, Math.min(selection.box.left, window.innerWidth - 296)),
+          }}
         />
       ) : null}
 
@@ -576,7 +707,18 @@ function EditTools() {
           </div>
         ) : null}
 
-        {active && !selection && !placingNote ? (
+        {active && placing ? (
+          <p
+            {...ui}
+            className="font-label pointer-events-auto rounded-pill bg-[#c8a053] px-3 py-1 text-center text-[0.6875rem] tracking-wide text-[#2c1503]"
+          >
+            Click where it should go · Esc to cancel
+          </p>
+        ) : null}
+
+        {active && addOpen ? <AddPanel onChoose={chooseToAdd} onClose={() => setAddOpen(false)} /> : null}
+
+        {active && !selection && !placingNote && !placing && !addOpen ? (
           <p
             {...ui}
             className="font-label hidden rounded-pill bg-[#2c1503]/80 px-3 py-1 text-center text-[0.625rem] tracking-wide text-[#ece1cb] sm:block"
@@ -618,6 +760,17 @@ function EditTools() {
                   </button>
                 ))}
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setPlacing(null);
+                  setAddOpen((v) => !v);
+                }}
+                className={`${btn} ${addOpen || placing ? "bg-[#c8a053] text-[#2c1503]" : "hover:bg-white/10"}`}
+              >
+                + Add
+              </button>
 
               <button
                 type="button"
@@ -676,6 +829,7 @@ function EditTools() {
 
 function SelectionTools({
   selection,
+  onColor,
   onEditText,
   onDrag,
   onSize,
@@ -688,6 +842,7 @@ function SelectionTools({
 }: {
   selection: Selection;
   onReplace: () => void;
+  onColor: () => void;
   onEditText: () => void;
   onDrag: (e: React.PointerEvent) => void;
   onSize: (delta: number) => void;
@@ -705,7 +860,7 @@ function SelectionTools({
   // Above the selection if there's room; below it if that's still on screen;
   // otherwise just inside its top edge (tall things like the hero photo).
   const vw = window.innerWidth;
-  const barWidth = Math.min(isImage ? 360 : 470, vw - 16);
+  const barWidth = Math.min(isImage ? 360 : 540, vw - 16);
   const top =
     box.top > 56
       ? box.top - 46
@@ -759,6 +914,11 @@ function SelectionTools({
               A+
             </button>
           </>
+        ) : null}
+        {!isImage ? (
+          <button type="button" className={tool} onClick={onColor} title="Text, fill and border colour">
+            ◐ Colour
+          </button>
         ) : null}
         <button type="button" className={`${tool} hover:text-[#f0a493]`} onClick={onDelete} title="Remove from the page">
           Delete
@@ -856,7 +1016,7 @@ type Package = ReturnType<typeof buildPackage>;
 /** What app/api/edits/route.ts says back after publishing. */
 type SaveReply = {
   path: string;
-  applied: { page: string; selector: string; what: string; kind: "text" | "media" | "delete" }[];
+  applied: { page: string; selector: string; what: string; kind: "text" | "media" | "delete" | "color" }[];
   skipped: { page: string; selector: string; what: string; why: string }[];
   commit: string | null;
   commitNote: string | null;
@@ -892,6 +1052,23 @@ function buildPackage(s: EditState) {
             convertedFromHeic: m.converted,
             warnings: m.warnings,
           })),
+          colors: Object.values(p.colors ?? {}).map((c) => ({
+            element: c.ref,
+            text: c.text,
+            target: c.target,
+            value: c.value,
+            className: classFor(c.target, c.value),
+          })),
+          inserts: (p.inserts ?? []).map((i) => ({
+            kind: i.kind,
+            name: i.name,
+            text: i.text || null,
+            color: i.color ? classFor("text", i.color) : null,
+            file: i.file,
+            position: { x: i.x, y: i.y },
+            width: i.w,
+            droppedOn: i.near,
+          })),
           notes: p.notes
             .filter((n) => n.text.trim())
             .map((n) => ({ text: n.text, near: n.near, position: { x: n.x, y: n.y } })),
@@ -899,7 +1076,14 @@ function buildPackage(s: EditState) {
       ] as const)
       .filter(
         ([, p]) =>
-          p.textEdits.length + p.moves.length + p.textSize.length + p.deleted.length + p.media.length + p.notes.length,
+          p.textEdits.length +
+          p.moves.length +
+          p.textSize.length +
+          p.deleted.length +
+          p.media.length +
+          p.colors.length +
+          p.inserts.length +
+          p.notes.length,
       ),
   );
   return {
@@ -910,7 +1094,7 @@ function buildPackage(s: EditState) {
     viewport: { width: window.innerWidth, height: window.innerHeight },
     changeCount: countChanges(s),
     howToRead:
-      "Positions (dx/dy) are pixel nudges at the viewport size above. Each element carries its tag, its text and the heading of its section so it can be found in source.",
+      "Positions (dx/dy) are pixel nudges at the viewport size above. Each element carries its tag, its text and the heading of its section so it can be found in source. Inserts are new items placed at page coordinates (x/y from the top-left of the page, at the viewport above); droppedOn is the element under the drop point. Colours give the Tailwind class to apply.",
     pages,
   };
 }
