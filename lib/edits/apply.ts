@@ -583,6 +583,7 @@ function summarize(applied: ApplyResult["applied"]) {
     count("text") && `${count("text")} text change${count("text") > 1 ? "s" : ""}`,
     count("media") && `${count("media")} photo${count("media") > 1 ? "s" : ""}`,
     count("delete") && `${count("delete")} removal${count("delete") > 1 ? "s" : ""}`,
+    count("color") && `${count("color")} colour${count("color") > 1 ? "s" : ""}`,
   ].filter(Boolean);
   return parts.join(", ");
 }

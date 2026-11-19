@@ -457,12 +457,16 @@ function EditTools() {
       e.stopPropagation();
       setColorsOpen(false);
       setSelectedInsert(null);
+      // Page position from the viewport position plus scroll: the same thing
+      // as pageX/pageY for a real click, and also right for synthetic ones.
+      const px = e.clientX + window.scrollX;
+      const py = e.clientY + window.scrollY;
       if (placing) {
-        placeAt(e.pageX, e.pageY, target);
+        placeAt(px, py, target);
         return;
       }
       if (placingNote) {
-        addNote(e.pageX, e.pageY, target);
+        addNote(px, py, target);
         setPlacingNote(false);
         return;
       }

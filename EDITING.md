@@ -31,6 +31,10 @@ Click **✎ Edit**. The bar at the bottom grows into the edit tools.
   further — with a gold guide line to show it. Or use the **arrow keys** to
   nudge by 1px (**Shift + arrow** for 10px).
 - **A− / A+** — make the text smaller or larger.
+- **◐ Colour** — set the **text**, **fill** (background) or **border** colour.
+  The swatches are the brand palette. **⌖ Eyedropper** picks up any colour on
+  your screen (Chrome and Edge on a computer; phones and Safari don't have
+  one). **Custom** opens a full colour picker. **Clear** puts it back.
 - **Delete** — removes the element from the page. **↺ Undo delete** in the
   bottom bar brings back the most recent one.
 - **Note** — pins a note beside the selection. **+ Note** in the bottom bar lets
@@ -40,6 +44,23 @@ Click **✎ Edit**. The bar at the bottom grows into the edit tools.
 - **Reset** — undoes every change to the selected element.
 - **Home / About / Letter / Book** — switch pages without leaving edit mode.
   In edit mode, clicking the site's own links selects them instead of following them.
+
+## Adding new things
+
+**+ Add** in the bottom bar opens a menu of things to drop onto the page:
+
+- **Photo** — from this device (on a phone, the photo library or camera).
+- **Text** — a heading, a paragraph, or a small label.
+- **Logo** — the portrait mark or the wordmark.
+- **Ornaments** — all twelve, and the three borders.
+
+Pick one, then click where it should go. Click an added item to get its own
+small toolbar: **⠿ Move** (Shift keeps it straight), **− / +** for size,
+**✎ Text** for added text (or double-click it), **◐ Colour**, and **Delete**.
+
+Added items are placed by hand, so they're a sketch of where something should
+go. Claude builds them into the page properly — in the layout, so they hold
+their place on phones too.
 
 Your draft is kept in this browser. Refreshing, switching pages, or closing the
 tab loses nothing.
@@ -103,12 +124,13 @@ hotspot), **Save changes** publishes immediately:
 - **Text** — your wording replaces the original in the site's code, exactly.
 - **Photos** — cropped to the shape of their spot and swapped in.
 - **Deletions** — removed, when the element is written out on its own in a page.
+- **Colours** — swapped in, for those same elements.
 
 The page updates in place, those edits leave the draft, and the change is
 saved as a step in the project's history — any save can be undone.
 
 Everything else is saved to `edits/` and waits for Claude: **moves, text size,
-notes, video**, and anything that couldn't be pinned to exactly one place —
+added items, notes, video**, and anything that couldn't be pinned to exactly one place —
 wording used in several spots (a button label, say), text assembled from
 pieces (like "Austin, Texas, by appointment"), or something deleted out of a
 list of cards. The message after saving says how many are waiting; just tell

@@ -30,8 +30,33 @@ export function tokenLabel(token: string) {
   return token.replace(/-/g, " ").replace(/^ink$/, "ink (adapts to dark sections)");
 }
 
+/**
+ * The raw palette values from app/globals.css. Tailwind only outputs the
+ * colour variables the site already uses, so a swatch nobody has used yet
+ * (petal, say) needs its value spelled out until the class lands in the code.
+ */
+const HEX: Record<string, string> = {
+  "bone-50": "#fbf6ea",
+  "bone-100": "#f7f1e2",
+  "bone-200": "#f4ecd8",
+  "bone-300": "#ece1cb",
+  "bone-400": "#e5d8be",
+  "sienna-300": "#b79a78",
+  "sienna-500": "#8b5e3c",
+  "sienna-700": "#6a3f22",
+  "sienna-800": "#4a2a14",
+  "sienna-900": "#3b1d04",
+  honey: "#c8a053",
+  "honey-soft": "#dcbc82",
+  sage: "#6b7c4a",
+  blush: "#d4a89a",
+  petal: "#e6c9b8"
+};
+
 export function cssValue(v: ColorValue) {
-  return "token" in v ? `var(--color-${v.token})` : v.hex;
+  if ("hex" in v) return v.hex;
+  const fallback = HEX[v.token];
+  return fallback ? `var(--color-${v.token}, ${fallback})` : `var(--color-${v.token})`;
 }
 
 /** The Tailwind class that sets this colour, e.g. text-sienna-700 or bg-[#a1b2c3]. */
