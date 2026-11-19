@@ -106,37 +106,10 @@ export default function HomePage() {
         </section>
 
         {/* -------------------------------------------------------------- */}
-        {/* The thesis                                                      */}
-        {/* -------------------------------------------------------------- */}
-        <section className="bg-surface-sunken">
-          <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-36">
-            <div className="shadow-rest relative overflow-hidden rounded-md">
-              <Image
-                {...photoAttrs("stillLife")}
-                src={photos.stillLife.src}
-                alt={photos.stillLife.alt}
-                placeholder="blur"
-                sizes="(min-width: 768px) 44vw, 90vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
-
-            <blockquote>
-              <p className="label-caps text-ink-soft">A note from Nicole</p>
-              <p className="text-quote font-poetic text-ink mt-8 font-light italic">
-                {voice.thesis}
-              </p>
-              <footer className="label-caps text-ink-soft mt-10">
-                — Nicole, founder
-              </footer>
-            </blockquote>
-          </div>
-        </section>
-
-        {/* -------------------------------------------------------------- */}
         {/* The practice — the services                                     */}
         {/* -------------------------------------------------------------- */}
-        <section className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-36">
+        {/* Follows the name on the same ground, so it needs less above it. */}
+        <section className="mx-auto max-w-7xl px-5 pt-8 pb-24 md:px-10 md:pt-16 md:pb-36">
           <header className="mb-16 max-w-2xl">
             <p className="label-caps text-ink-soft">The practice</p>
             <h2 className="text-title text-ink mt-5">{voice.returning}</h2>
@@ -176,6 +149,34 @@ export default function HomePage() {
             {addOns.map((a) => (
               <AddOnRow key={a.slug} addOn={a} compact />
             ))}
+          </div>
+        </section>
+
+        {/* -------------------------------------------------------------- */}
+        {/* The thesis                                                      */}
+        {/* -------------------------------------------------------------- */}
+        <section className="bg-surface-sunken">
+          <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-36">
+            <div className="shadow-rest relative overflow-hidden rounded-md">
+              <Image
+                {...photoAttrs("stillLife")}
+                src={photos.stillLife.src}
+                alt={photos.stillLife.alt}
+                placeholder="blur"
+                sizes="(min-width: 768px) 44vw, 90vw"
+                className="h-full w-full object-cover"
+              />
+            </div>
+
+            <blockquote>
+              <p className="label-caps text-ink-soft">A note from Nicole</p>
+              <p className="text-quote font-poetic text-ink mt-8 font-light italic">
+                {voice.thesis}
+              </p>
+              <footer className="label-caps text-ink-soft mt-10">
+                — Nicole, founder
+              </footer>
+            </blockquote>
           </div>
         </section>
 
