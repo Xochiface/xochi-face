@@ -2,8 +2,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Receives an edit-mode package and writes it into the project at edits/,
- * so a developer can read and apply it directly.
+ * Receives an edit-mode package, publishes what can be applied exactly (text,
+ * photos, simple deletions — see lib/edits/apply.ts), and writes the whole
+ * package into the project at edits/ with a record of what was applied and
+ * what is left for a developer.
  *
  * Development only. Writing to disk from a request is not something a live
  * site should ever do, so in production this route does not exist (404) and
@@ -36,11 +38,31 @@ export async function POST(request: Request) {
     return Response.json({ error: "Not an edit package" }, { status: 400 });
   }
 
+  // Loaded only here, in development: the TypeScript parser is heavy, and the
+  // live site never needs it.
+  const { applyPackage } = await import("@/lib/edits/apply");
+  let result;
+  try {
+    result = await applyPackage(data);
+  } catch (error) {
+    result = {
+      applied: [],
+      skipped: [],
+      files: [],
+      commit: null,
+      commitNote: `Nothing was published — applying failed: ${String(error)}`,
+    };
+  }
+
   const dir = path.join(process.cwd(), "edits");
   await mkdir(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const file = `edits-${stamp}.json`;
-  await writeFile(path.join(dir, file), JSON.stringify(data, null, 2), "utf8");
+  await writeFile(
+    path.join(dir, file),
+    JSON.stringify({ ...data, result }, null, 2),
+    "utf8",
+  );
 
-  return Response.json({ path: `edits/${file}` });
+  return Response.json({ path: `edits/${file}`, ...result });
 }

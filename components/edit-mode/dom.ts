@@ -64,9 +64,20 @@ export function markOriginal(el: HTMLElement, original: string | null) {
   else el.dataset[ORIGINAL] = original;
 }
 
+/**
+ * An element's text as written in the source: textContent, not innerText.
+ * innerText reports text as displayed, so anything styled in capitals (every
+ * small label on the site) would come back SHOUTED and never match the code.
+ * Line breaks typed with Shift+Enter arrive as <br>, kept as newlines.
+ */
+export function plainText(el: Element): string {
+  const clone = el.cloneNode(true) as Element;
+  clone.querySelectorAll("br").forEach((br) => br.replaceWith("\n"));
+  return clone.textContent ?? "";
+}
+
 function sourceText(el: Element): string {
-  const h = el as HTMLElement;
-  return h.dataset?.[ORIGINAL] ?? h.innerText ?? el.textContent ?? "";
+  return (el as HTMLElement).dataset?.[ORIGINAL] ?? plainText(el);
 }
 
 /** Human-readable context: the element's own text plus the heading of the
@@ -90,7 +101,7 @@ export function applyPage(page: PageEdits | undefined, { includeText }: { includ
   if (includeText) {
     for (const [sel, edit] of Object.entries(page.text)) {
       const el = find(sel);
-      if (el && el.innerText.trim() === edit.original.trim()) {
+      if (el && plainText(el).trim() === edit.original.trim()) {
         markOriginal(el, edit.original);
         el.innerText = edit.edited;
       }
@@ -112,12 +123,9 @@ export function applyPage(page: PageEdits | undefined, { includeText }: { includ
     if (el instanceof HTMLImageElement) applyMedia(el, m.kind, m.preview);
   }
 
-  for (const sel of Object.keys(page.hidden)) {
+  for (const sel of Object.keys(page.deleted ?? {})) {
     const el = find(sel);
-    if (el) {
-      el.style.opacity = "0.18";
-      el.style.outline = "1px dashed currentColor";
-    }
+    if (el) setDeleted(el, true);
   }
 }
 
@@ -269,9 +277,8 @@ export function computedFontPx(el: Element): number {
   return parseFloat(getComputedStyle(el).fontSize) || 16;
 }
 
-export function setHiddenStyle(el: HTMLElement, hidden: boolean) {
-  el.style.opacity = hidden ? "0.18" : "";
-  el.style.outline = hidden ? "1px dashed currentColor" : "";
+export function setDeleted(el: HTMLElement, deleted: boolean) {
+  el.style.display = deleted ? "none" : "";
 }
 
 export function setBodyCursor(cursor: string) {
@@ -287,7 +294,7 @@ export function editTextInPlace(
   el: HTMLElement,
   onDone: (before: string, after: string) => void,
 ) {
-  const before = el.innerText;
+  const before = plainText(el);
   el.contentEditable = "true";
   el.spellcheck = true;
   el.focus();
@@ -311,7 +318,7 @@ export function editTextInPlace(
     el.removeEventListener("blur", onBlur);
     el.removeAttribute("contenteditable");
     if (!commit) el.innerText = before;
-    onDone(before, commit ? el.innerText : before);
+    onDone(before, commit ? plainText(el) : before);
     el.blur();
   };
 
@@ -342,8 +349,7 @@ export function editTextInPlace(
 export function resetElement(el: HTMLElement, originalText?: string) {
   el.style.transform = "";
   el.style.fontSize = "";
-  el.style.opacity = "";
-  el.style.outline = "";
+  el.style.display = "";
   if (originalText !== undefined) el.innerText = originalText;
   markOriginal(el, null);
   if (el instanceof HTMLImageElement) restoreMedia(el);

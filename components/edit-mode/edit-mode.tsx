@@ -14,12 +14,15 @@ import {
   isEditUi,
   markOriginal,
   measure,
+  find,
   pickAt,
   pickFile,
+  plainText,
   resetElement,
+  restoreMedia,
   setBodyCursor,
+  setDeleted,
   setFontPx,
-  setHiddenStyle,
   setTranslate,
   slotOf,
   type Box,
@@ -32,6 +35,7 @@ import {
   getState,
   markSaved,
   processAccessParam,
+  removeApplied,
   updatePage,
   type EditState,
   type MediaEdit,
@@ -42,15 +46,16 @@ import {
  * Private edit mode.
  *
  * A button at the bottom of every page. In edit mode you can click any text to
- * select it, double-click to rewrite it, drag to move it, resize it, hide it,
- * and pin notes anywhere. Edits are a working draft kept in this browser until
- * "Save changes" packages every page into one JSON file:
+ * select it, double-click to rewrite it, drag to move it (Shift keeps the drag
+ * straight), resize it, delete it, replace photos, and pin notes anywhere.
+ * Edits are a working draft kept in this browser until "Save changes":
  *
- *   - running locally (npm run dev): written into the project at edits/
- *   - on the live site: downloaded as a file
+ *   - running locally (npm run dev): text, photos and simple deletions are
+ *     published straight into the code and committed (lib/edits/apply.ts);
+ *     the rest is written to edits/ for a developer.
+ *   - on the live site: everything downloads as a file to send over.
  *
- * Nothing here can change the live site for anyone else — edits only alter
- * this browser's view of the page, then get handed to a developer to apply.
+ * Nothing here can change the live site for anyone else.
  *
  * Visibility: always on in development. On the live site it is hidden unless
  * this browser has been switched on with ?xochi-edit (and off with
@@ -91,6 +96,8 @@ function EditTools() {
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
+  // A straight-line guide while Shift-dragging: which way, and where.
+  const [guide, setGuide] = useState<{ axis: "x" | "y"; at: number } | null>(null);
 
   // A selection belongs to the page it was made on.
   const selection = rawSelection?.path === pathname ? rawSelection : null;
@@ -169,14 +176,30 @@ function EditTools() {
     let dx = baseX;
     let dy = baseY;
     const onMove = (ev: PointerEvent) => {
-      dx = Math.round(baseX + ev.clientX - startX);
-      dy = Math.round(baseY + ev.clientY - startY);
+      let mx = ev.clientX - startX;
+      let my = ev.clientY - startY;
+      // Shift keeps the move straight: whichever way it has gone further wins.
+      if (ev.shiftKey) {
+        if (Math.abs(mx) >= Math.abs(my)) my = 0;
+        else mx = 0;
+      }
+      dx = Math.round(baseX + mx);
+      dy = Math.round(baseY + my);
       setTranslate(el, dx, dy);
+      const box = measure(el);
+      setGuide(
+        ev.shiftKey
+          ? mx !== 0
+            ? { axis: "x", at: box.top + box.height / 2 }
+            : { axis: "y", at: box.left + box.width / 2 }
+          : null,
+      );
       refresh(el);
     };
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+      setGuide(null);
       commitMove(el, dx, dy);
     };
     window.addEventListener("pointermove", onMove);
@@ -202,19 +225,29 @@ function EditTools() {
     refresh(el);
   }
 
-  function toggleHidden(el: HTMLElement) {
+  function deleteElement(el: HTMLElement) {
     const ref = describe(el);
+    const text = el.dataset.xochiOriginal ?? plainText(el);
+    setDeleted(el, true);
+    updatePage(pathname, (p) => ({ ...p, deleted: { ...p.deleted, [ref.selector]: { ref, text } } }));
+    setSelection(null);
+    setHover(null);
+    flash("Deleted. “Undo delete” in the bar brings it back.", 4000);
+  }
+
+  /** Brings back the most recent deletion on this page. */
+  function undoDelete() {
+    const deleted = getState().pages[pathname]?.deleted ?? {};
+    const last = Object.keys(deleted).at(-1);
+    if (!last) return;
+    const el = find(last);
+    if (el) setDeleted(el, false);
     updatePage(pathname, (p) => {
-      const hidden = { ...p.hidden };
-      if (hidden[ref.selector]) {
-        delete hidden[ref.selector];
-        setHiddenStyle(el, false);
-      } else {
-        hidden[ref.selector] = { ref };
-        setHiddenStyle(el, true);
-      }
-      return { ...p, hidden };
+      const next = { ...p.deleted };
+      delete next[last];
+      return { ...p, deleted: next };
     });
+    if (el) refresh(el);
   }
 
   function flash(message: string, ms = 6000) {
@@ -303,7 +336,7 @@ function EditTools() {
         delete next[k];
         return next;
       };
-      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), hidden: strip(p.hidden), media: strip(p.media) };
+      return { ...p, text: strip(p.text), moves: strip(p.moves), size: strip(p.size), deleted: strip(p.deleted), media: strip(p.media) };
     });
     refresh(el);
   }
@@ -408,25 +441,51 @@ function EditTools() {
   async function save() {
     setSaving(true);
     const pkg = buildPackage(getState());
-    let where = "";
+    let reply: SaveReply | null = null;
     try {
       const res = await fetch("/api/edits", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(pkg),
       });
-      if (res.ok) where = (await res.json()).path;
+      if (res.ok) reply = await res.json();
     } catch {
-      /* no local writer — fall through to a download */
+      /* no local server — fall through to a download */
     }
-    if (!where) {
+
+    if (!reply) {
       download(pkg);
-      where = "your Downloads folder";
+      markSaved("your Downloads folder");
+      setSaving(false);
+      flash(`Saved ${pkg.changeCount} changes to your Downloads folder — send the file over to apply them.`, 8000);
+      return;
     }
-    markSaved(where);
+
+    // What was published is now in the code: let the page show the real
+    // thing, and take it out of the draft so it isn't applied twice.
+    for (const a of reply.applied) {
+      if (a.page !== pathname) continue;
+      const el = find(a.selector);
+      if (!el) continue;
+      if (a.kind === "text") markOriginal(el, null);
+      if (a.kind === "media" && el instanceof HTMLImageElement) restoreMedia(el);
+    }
+    removeApplied(reply.applied);
+    markSaved(reply.path);
     setSaving(false);
-    setToast(`Saved ${pkg.changeCount} changes to ${where}`);
-    setTimeout(() => setToast(null), 6000);
+    setSelection(null);
+    router.refresh();
+
+    const published = reply.applied.length;
+    const waiting = pkg.changeCount - published;
+    const parts = [
+      published
+        ? `Published ${published} change${published > 1 ? "s" : ""} to the site.`
+        : "Nothing could be published automatically.",
+      waiting ? `${waiting} more saved for Claude to apply.` : "",
+      reply.commitNote ?? "",
+    ];
+    flash(parts.filter(Boolean).join(" "), 10000);
   }
 
   function discard() {
@@ -468,7 +527,7 @@ function EditTools() {
           onEditText={() => editText(selection.el)}
           onDrag={(e) => startDrag(e, selection.el)}
           onSize={(d) => resize(selection.el, d)}
-          onHide={() => toggleHidden(selection.el)}
+          onDelete={() => deleteElement(selection.el)}
           onNote={() =>
             addNote(
               selection.box.left + selection.box.width + window.scrollX + 12,
@@ -485,7 +544,18 @@ function EditTools() {
             if (selection.el instanceof HTMLImageElement) replaceMedia(selection.el);
           }}
           onClose={() => setSelection(null)}
-          isHidden={!!page?.hidden[describe(selection.el).selector]}
+        />
+      ) : null}
+
+      {guide ? (
+        <div
+          {...ui}
+          className="pointer-events-none fixed z-[93] border-dashed border-[#c8a053]"
+          style={
+            guide.axis === "x"
+              ? { left: 0, right: 0, top: guide.at, borderTopWidth: 1 }
+              : { top: 0, bottom: 0, left: guide.at, borderLeftWidth: 1 }
+          }
         />
       ) : null}
 
@@ -542,13 +612,19 @@ function EditTools() {
               {placingNote ? "Click to place note" : "+ Note"}
             </button>
 
+            {Object.keys(page?.deleted ?? {}).length ? (
+              <button type="button" onClick={undoDelete} className={`${btn} hover:bg-white/10`}>
+                ↺ Undo delete
+              </button>
+            ) : null}
+
             <button
               type="button"
               disabled={saving || !changes}
               onClick={save}
               className={`${btn} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82] disabled:opacity-40`}
             >
-              {saving ? "Saving…" : `Save changes${changes ? ` (${changes})` : ""}`}
+              {saving ? "Publishing…" : `Save changes${changes ? ` (${changes})` : ""}`}
             </button>
 
             <button
@@ -581,7 +657,7 @@ function EditTools() {
           {...ui}
           className="font-label pointer-events-none fixed bottom-[4.75rem] left-1/2 z-[95] hidden -translate-x-1/2 sm:block whitespace-nowrap rounded-pill bg-[#2c1503]/80 px-3 py-1 text-[0.625rem] tracking-wide text-[#ece1cb]"
         >
-          Click to select · double-click to rewrite · select a photo to replace it · arrows nudge (shift = 10px) · Esc to deselect
+          Click to select · double-click to rewrite · drag ⠿ to move (hold shift to keep it straight) · arrows nudge · Esc to deselect
         </p>
       ) : null}
     </>,
@@ -593,11 +669,10 @@ function EditTools() {
 
 function SelectionTools({
   selection,
-  isHidden,
   onEditText,
   onDrag,
   onSize,
-  onHide,
+  onDelete,
   onNote,
   onParent,
   onReset,
@@ -605,12 +680,11 @@ function SelectionTools({
   onReplace,
 }: {
   selection: Selection;
-  isHidden: boolean;
   onReplace: () => void;
   onEditText: () => void;
   onDrag: (e: React.PointerEvent) => void;
   onSize: (delta: number) => void;
-  onHide: () => void;
+  onDelete: () => void;
   onNote: () => void;
   onParent: () => void;
   onReset: () => void;
@@ -662,7 +736,7 @@ function SelectionTools({
           type="button"
           onPointerDown={onDrag}
           className={`${tool} cursor-grab active:cursor-grabbing`}
-          title="Drag to move"
+          title="Drag to move — hold Shift to keep it straight"
         >
           ⠿ Move
         </button>
@@ -679,8 +753,8 @@ function SelectionTools({
             </button>
           </>
         ) : null}
-        <button type="button" className={tool} onClick={onHide}>
-          {isHidden ? "Show" : "Hide"}
+        <button type="button" className={`${tool} hover:text-[#f0a493]`} onClick={onDelete} title="Remove from the page">
+          Delete
         </button>
         <button type="button" className={tool} onClick={onNote}>
           Note
@@ -772,6 +846,15 @@ function describeAt(pageX: number, pageY: number) {
 
 type Package = ReturnType<typeof buildPackage>;
 
+/** What app/api/edits/route.ts says back after publishing. */
+type SaveReply = {
+  path: string;
+  applied: { page: string; selector: string; what: string; kind: "text" | "media" | "delete" }[];
+  skipped: { page: string; selector: string; what: string; why: string }[];
+  commit: string | null;
+  commitNote: string | null;
+};
+
 function buildPackage(s: EditState) {
   const pages = Object.fromEntries(
     Object.entries(s.pages)
@@ -786,7 +869,7 @@ function buildPackage(s: EditState) {
             toPx: Math.round(z.basePx * z.factor * 10) / 10,
             factor: z.factor,
           })),
-          hidden: Object.values(p.hidden).map((h) => ({ element: h.ref })),
+          deleted: Object.values(p.deleted ?? {}).map((d) => ({ element: d.ref, text: d.text })),
           media: Object.values(p.media ?? {}).map((m) => ({
             element: m.ref,
             slot: m.slot,
@@ -809,7 +892,7 @@ function buildPackage(s: EditState) {
       ] as const)
       .filter(
         ([, p]) =>
-          p.textEdits.length + p.moves.length + p.textSize.length + p.hidden.length + p.media.length + p.notes.length,
+          p.textEdits.length + p.moves.length + p.textSize.length + p.deleted.length + p.media.length + p.notes.length,
       ),
   );
   return {

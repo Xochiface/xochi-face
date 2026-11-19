@@ -74,7 +74,9 @@ export type ElementRef = {
 export type TextEdit = { ref: ElementRef; original: string; edited: string };
 export type MoveEdit = { ref: ElementRef; dx: number; dy: number };
 export type SizeEdit = { ref: ElementRef; basePx: number; factor: number };
-export type HideEdit = { ref: ElementRef };
+/** Removed from the page. `text` is its full original wording, so it can be
+ *  found in the code — ElementRef.text is clipped. */
+export type DeleteEdit = { ref: ElementRef; text: string };
 
 /** A photo or video swapped into an image slot. */
 export type MediaEdit = {
@@ -106,7 +108,7 @@ export type PageEdits = {
   text: Record<string, TextEdit>;
   moves: Record<string, MoveEdit>;
   size: Record<string, SizeEdit>;
-  hidden: Record<string, HideEdit>;
+  deleted: Record<string, DeleteEdit>;
   media: Record<string, MediaEdit>;
   notes: Note[];
 };
@@ -120,7 +122,7 @@ const EDITS_KEY = "xochi-edits-v1";
 const EMPTY: EditState = { pages: {}, lastSaved: null };
 
 export function emptyPage(): PageEdits {
-  return { text: {}, moves: {}, size: {}, hidden: {}, media: {}, notes: [] };
+  return { text: {}, moves: {}, size: {}, deleted: {}, media: {}, notes: [] };
 }
 
 let state: EditState = EMPTY;
@@ -132,10 +134,25 @@ function load() {
   loaded = true;
   try {
     const raw = window.localStorage.getItem(EDITS_KEY);
-    if (raw) state = { ...EMPTY, ...JSON.parse(raw) };
+    if (raw) state = migrate({ ...EMPTY, ...JSON.parse(raw) });
   } catch {
     state = EMPTY;
   }
+}
+
+/** Drafts from before "Hide" became "Delete" kept hidden elements under
+ *  `hidden`; carry them over as deletions. */
+function migrate(s: EditState): EditState {
+  const pages: EditState["pages"] = {};
+  for (const [path, p] of Object.entries(s.pages)) {
+    const old = (p as { hidden?: Record<string, { ref: ElementRef }> }).hidden ?? {};
+    const deleted = { ...p.deleted };
+    for (const [sel, h] of Object.entries(old)) deleted[sel] ??= { ref: h.ref, text: h.ref.text };
+    const { hidden: _drop, ...rest } = p as PageEdits & { hidden?: unknown };
+    void _drop;
+    pages[path] = { ...emptyPage(), ...rest, deleted };
+  }
+  return { ...s, pages };
 }
 
 function persist() {
@@ -173,6 +190,21 @@ export function updatePage(path: string, fn: (page: PageEdits) => PageEdits) {
   set({ ...state, pages: { ...state.pages, [path]: fn(current) } });
 }
 
+/** Drop the edits that "Save changes" has published into the code. */
+export function removeApplied(applied: { page: string; selector: string; kind: string }[]) {
+  load();
+  const pages = { ...state.pages };
+  for (const a of applied) {
+    const p = pages[a.page];
+    if (!p) continue;
+    const field = a.kind === "text" ? "text" : a.kind === "media" ? "media" : "deleted";
+    const next = { ...p[field] };
+    delete next[a.selector];
+    pages[a.page] = { ...p, [field]: next };
+  }
+  set({ ...state, pages });
+}
+
 export function markSaved(where: string) {
   load();
   set({ ...state, lastSaved: { at: new Date().toISOString(), where } });
@@ -194,7 +226,7 @@ export function countChanges(s: EditState): number {
       Object.keys(p.text).length +
       Object.keys(p.moves).length +
       Object.keys(p.size).length +
-      Object.keys(p.hidden).length +
+      Object.keys(p.deleted ?? {}).length +
       Object.keys(p.media ?? {}).length +
       p.notes.filter((note) => note.text.trim()).length,
     0,
