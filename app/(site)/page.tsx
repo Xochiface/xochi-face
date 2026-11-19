@@ -108,54 +108,55 @@ export default function HomePage() {
         {/* -------------------------------------------------------------- */}
         {/* The practice — the services                                     */}
         {/* -------------------------------------------------------------- */}
-        {/* Follows the name on the same ground, so it needs less above it. */}
-        <section className="mx-auto max-w-7xl px-5 pt-8 pb-24 md:px-10 md:pt-16 md:pb-36">
-          <header className="mb-16 max-w-2xl">
-            <p className="label-caps text-ink-soft">The practice</p>
-            <h2 className="text-title text-ink mt-5">{voice.returning}</h2>
-            <p className="text-lead text-ink-muted mt-6 italic">
-              {philosophy.who}
-            </p>
-          </header>
+        <section className="bg-surface-sunken">
+          <div className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-36">
+            <header className="mb-16 max-w-2xl">
+              <p className="label-caps text-ink-soft">The practice</p>
+              <h2 className="text-title text-ink mt-5">{voice.returning}</h2>
+              <p className="text-lead text-ink-muted mt-6 italic">
+                {philosophy.who}
+              </p>
+            </header>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {services.map((s) => (
-              <Link
-                key={s.slug}
-                href={`/practice#${s.slug}`}
-                className="sm:max-lg:first:col-span-2 bg-surface-raised shadow-rest hover:shadow-lift duration-calm ease-exhale group flex flex-col rounded-md border border-rule/40 p-8 transition-all hover:-translate-y-1"
-              >
-                <div className="text-honey mb-6">
-                  <Ornament name={s.ornament} size={36} />
-                </div>
-                <p className="label-caps text-ink-soft">{s.eyebrow}</p>
-                <h3 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">
-                  {s.name}
-                </h3>
-                <p className="text-body text-ink-muted mt-5 flex-1 italic">
-                  {s.summary}
-                </p>
-                <div className="mt-8 flex items-baseline justify-between border-t border-rule/40 pt-5">
-                  <span className="font-display text-ink text-2xl font-[350]">
-                    {s.price}
-                  </span>
-                  <span className="label-caps text-ink-soft">{s.duration}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {services.map((s) => (
+                <Link
+                  key={s.slug}
+                  href={`/practice#${s.slug}`}
+                  className="sm:max-lg:first:col-span-2 bg-surface-raised shadow-rest hover:shadow-lift duration-calm ease-exhale group flex flex-col rounded-md border border-rule/40 p-8 transition-all hover:-translate-y-1"
+                >
+                  <div className="text-honey mb-6">
+                    <Ornament name={s.ornament} size={36} />
+                  </div>
+                  <p className="label-caps text-ink-soft">{s.eyebrow}</p>
+                  <h3 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">
+                    {s.name}
+                  </h3>
+                  <p className="text-body text-ink-muted mt-5 flex-1 italic">
+                    {s.summary}
+                  </p>
+                  <div className="mt-8 flex items-baseline justify-between border-t border-rule/40 pt-5">
+                    <span className="font-display text-ink text-2xl font-[350]">
+                      {s.price}
+                    </span>
+                    <span className="label-caps text-ink-soft">{s.duration}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
 
-          <div className="mt-6 space-y-6">
-            {addOns.map((a) => (
-              <AddOnRow key={a.slug} addOn={a} compact />
-            ))}
+            <div className="mt-6 space-y-6">
+              {addOns.map((a) => (
+                <AddOnRow key={a.slug} addOn={a} compact />
+              ))}
+            </div>
           </div>
         </section>
 
         {/* -------------------------------------------------------------- */}
         {/* The thesis                                                      */}
         {/* -------------------------------------------------------------- */}
-        <section className="bg-surface-sunken">
+        <section>
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-36">
             <div className="shadow-rest relative overflow-hidden rounded-md">
               <Image
