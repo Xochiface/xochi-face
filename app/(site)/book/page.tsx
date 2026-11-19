@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
+import { AddOnRow } from "@/components/site/add-on-row";
 import { BookingEmbed } from "@/components/site/booking-embed";
 import {
   booking,
@@ -9,7 +10,14 @@ import {
   bookingReady,
   bookingSteps,
 } from "@/content/booking";
-import { PENDING, services, site, voice } from "@/content/site";
+import {
+  addOns,
+  giftCertificate,
+  PENDING,
+  services,
+  site,
+  voice,
+} from "@/content/site";
 
 export const metadata: Metadata = {
   title: "Book a session",
@@ -67,7 +75,9 @@ export default function BookPage() {
                   <Ornament name={s.ornament} size={36} />
                 </div>
                 <p className="label-caps text-ink-soft">{s.eyebrow}</p>
-                <h2 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">{s.name}</h2>
+                <h2 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">
+                  {s.name}
+                </h2>
                 <p className="text-body text-ink-muted mt-5 flex-1 italic">
                   {s.summary}
                 </p>
@@ -109,6 +119,29 @@ export default function BookPage() {
               </div>
             ))}
           </div>
+
+          <div className="mt-6 space-y-6">
+            {addOns.map((a) => (
+              <AddOnRow key={a.slug} addOn={a} compact />
+            ))}
+          </div>
+
+          {/* Points at a service in the calendar, so only when it is inline. */}
+          {bookingInline ? (
+            <div className="mt-12 flex flex-col items-center gap-3 text-center">
+              <Ornament
+                name="offering"
+                size={26}
+                className="text-accent-sage"
+              />
+              <p className="font-display text-ink text-xl font-[350]">
+                {giftCertificate.title}
+              </p>
+              <p className="text-body text-ink-muted max-w-lg italic">
+                {giftCertificate.body}
+              </p>
+            </div>
+          ) : null}
         </section>
 
         {/* The calendar ---------------------------------------------------- */}
@@ -133,8 +166,9 @@ export default function BookPage() {
               </div>
               <p className="label-caps text-ink-soft">Not yet connected</p>
               <p className="text-lead text-ink-muted mx-auto mt-5 max-w-lg italic">
-                The scheduling platform hasn&rsquo;t been chosen yet. Once it is,
-                these buttons open the real calendar — the layout does not change.
+                The scheduling platform hasn&rsquo;t been chosen yet. Once it
+                is, these buttons open the real calendar — the layout does not
+                change.
               </p>
               <p className="font-label text-ink-soft mx-auto mt-6 max-w-lg text-xs">
                 Set <code className="text-ink">mode</code> and{" "}
@@ -151,7 +185,9 @@ export default function BookPage() {
             <div className="grid gap-12 md:grid-cols-2 md:gap-20">
               <div>
                 <p className="label-caps text-ink-soft">Before you come</p>
-                <h2 className="text-title text-ink mt-6">a few small things.</h2>
+                <h2 className="text-title text-ink mt-6">
+                  a few small things.
+                </h2>
                 <div className="text-accent-honey/45 mt-10 max-w-xs">
                   <BorderStrip name="floral" height={14} />
                 </div>
@@ -183,7 +219,9 @@ export default function BookPage() {
                     <h3 className="font-display text-ink text-xl font-[350]">
                       {title}
                     </h3>
-                    <p className="text-body text-ink-muted mt-3 italic">{body}</p>
+                    <p className="text-body text-ink-muted mt-3 italic">
+                      {body}
+                    </p>
                   </li>
                 ))}
               </ul>

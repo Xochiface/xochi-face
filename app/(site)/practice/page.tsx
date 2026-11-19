@@ -3,8 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
+import { AddOnRow } from "@/components/site/add-on-row";
 import { photoAttrs, photos } from "@/content/photos";
-import { benefits, services, site, voice } from "@/content/site";
+import { addOns, benefits, services, site, voice } from "@/content/site";
 
 export const metadata: Metadata = {
   title: "The practice",
@@ -22,8 +23,8 @@ export default function PracticePage() {
             {voice.softness}
           </h1>
           <p className="text-lead text-ink-muted mt-8 max-w-xl italic">
-            Three ways to come to the table. The full hour, an extended session, or
-            your first visit.
+            Three ways to come to the table. The full hour, an extended session,
+            or your first visit.
           </p>
         </div>
       </header>
@@ -62,7 +63,14 @@ export default function PracticePage() {
 
               <div className={i % 2 === 1 ? "md:order-1" : ""}>
                 <p className="text-lead text-ink-muted italic">{s.summary}</p>
-                <p className="text-body text-ink-muted mt-6 italic">{s.body}</p>
+                {s.body.map((paragraph) => (
+                  <p
+                    key={paragraph}
+                    className="text-body text-ink-muted mt-6 italic"
+                  >
+                    {paragraph}
+                  </p>
+                ))}
 
                 <ul className="mt-10 space-y-4 border-t border-rule/40 pt-8">
                   {s.includes.map((item) => (
@@ -81,6 +89,20 @@ export default function PracticePage() {
             </div>
           </section>
         ))}
+
+        {/* Add-ons ------------------------------------------------------- */}
+        <section className="border-t border-rule/40">
+          <div className="mx-auto max-w-7xl px-5 py-20 md:px-10 md:py-28">
+            <header className="mb-10 max-w-2xl">
+              <p className="label-caps text-ink-soft">Add to any facial</p>
+            </header>
+            <div className="space-y-6">
+              {addOns.map((a) => (
+                <AddOnRow key={a.slug} addOn={a} />
+              ))}
+            </div>
+          </div>
+        </section>
 
         {/* What the work does — Nicole's five, in her own order ----------- */}
         <section className="bg-surface-sunken border-t border-rule/40">

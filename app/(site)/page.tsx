@@ -3,12 +3,14 @@ import Link from "next/link";
 
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
+import { AddOnRow } from "@/components/site/add-on-row";
 import { photoAttrs, photos } from "@/content/photos";
 import {
   anatomy,
   etymology,
   letter,
   philosophy,
+  addOns,
   services,
   site,
   voice,
@@ -154,7 +156,9 @@ export default function HomePage() {
                   <Ornament name={s.ornament} size={36} />
                 </div>
                 <p className="label-caps text-ink-soft">{s.eyebrow}</p>
-                <h3 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">{s.name}</h3>
+                <h3 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">
+                  {s.name}
+                </h3>
                 <p className="text-body text-ink-muted mt-5 flex-1 italic">
                   {s.summary}
                 </p>
@@ -165,6 +169,12 @@ export default function HomePage() {
                   <span className="label-caps text-ink-soft">{s.duration}</span>
                 </div>
               </Link>
+            ))}
+          </div>
+
+          <div className="mt-6 space-y-6">
+            {addOns.map((a) => (
+              <AddOnRow key={a.slug} addOn={a} compact />
             ))}
           </div>
         </section>

@@ -68,7 +68,8 @@ export type Service = {
   eyebrow: string;
   name: string;
   summary: string;
-  body: string;
+  /** Paragraphs for the Practice page, after the summary. */
+  body: readonly string[];
   includes: readonly string[];
   price: string;
   duration: string;
@@ -77,13 +78,20 @@ export type Service = {
 };
 
 /**
- * The services live on Nicole's Square booking page, read directly from it on
- * 2026-09-30. Names, prices, and durations mirror Square exactly — if these
- * disagree with the booking page, the booking page is right and this file is
- * stale.
+ * The services live on Nicole's Square booking page. Last read from it on
+ * 2026-11-18, after she rewrote the descriptions there. Names, prices,
+ * durations and wording mirror Square — if these disagree with the booking
+ * page, the booking page is right and this file is stale.
  *
- * "30 minutes in heaven" (30 min, $80) is on Square but deliberately left off
- * the site, at Jake's request on 2026-11-16.
+ * Square's first sentence or paragraph is the summary (the cards); the rest
+ * is the body (the Practice page).
+ *
+ * Also on Square, deliberately not shown as a service card:
+ *   - "30 minutes in heaven" (30 min, $80), left off at Jake's request on
+ *     2026-11-16.
+ *   - "Facial - Gift Certificate Booking" (free, 1 hr): a way to redeem, not
+ *     a service. The Book page points to it instead; see `giftCertificate`.
+ * The buccal massage add-on is in `addOns`, below.
  *
  * Note on the brand kit: it specifies a different menu again — "the ninety"
  * (90 min, $220), "the sixty" (60 min, $160), "the new moon" ($380/month).
@@ -97,12 +105,16 @@ export const services: readonly Service[] = [
     eyebrow: "The signature bloom",
     name: "Xochi Signature Facial",
     summary:
-      "A holistic facial combining lymphatic drainage, facial sculpting, cleansing, and intentional massage. Includes scalp, arm, and hand massage for a complete experience of relaxation and skin renewal.",
-    body: "The full practice. We work the lymph toward its natural drainage points, then sculpt — cheekbones, jawline, the small muscles around the eyes. Scalp, arms, and hands are part of it, because the face does not hold tension in isolation. Most people fall asleep somewhere in the scalp massage.",
+      "A holistic cleansing facial that brings together lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage.",
+    body: [
+      "Each treatment is thoughtfully designed to support skin health, relieve facial tension, and encourage a refreshed, sculpted appearance.",
+      "Finished with relaxing arm and hand massage for a complete experience of restoration and care.",
+    ],
     includes: [
+      "Cleansing",
       "Manual lymphatic drainage",
-      "Facial sculpting",
-      "Scalp massage",
+      "Russian facial sculpting",
+      "Traditional Chinese Medicine-inspired scalp massage",
       "Arm and hand massage",
     ],
     price: "$125",
@@ -115,13 +127,18 @@ export const services: readonly Service[] = [
     eyebrow: "The full arc",
     name: "90 minute Lymphatic",
     summary:
-      "Extra love and care. Individualized cleanse with specialized mask for your skin's specific needs, lymphatic drainage, and a long finish with hot stone gua sha and red light therapy.",
-    body: "The longest session, and the least hurried. A facial cleanse first, then lymphatic drainage through the head, shoulders, arms and hands. It closes with hot stone gua sha and red light therapy — the part most people do not want to get up from.",
+      "An extended holistic facial thoughtfully tailored to your skin's individual needs. Beginning with a customized cleanse and a carefully selected treatment mask, this experience brings together lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage.",
+    body: [
+      "With extra time dedicated to intentional touch and facial massage, the treatment supports lymphatic flow, releases facial tension, and promotes a refreshed, sculpted appearance.",
+      "The experience concludes with the soothing warmth of hot stones and red light therapy, leaving you feeling restored, relaxed, and cared for from within.",
+    ],
     includes: [
-      "Facial cleansing",
+      "Customized cleanse and treatment mask",
       "Manual lymphatic drainage",
-      "Head, shoulder, arm and hand massage",
-      "Hot stones and gua-sha",
+      "Russian facial sculpting",
+      "Traditional Chinese Medicine-inspired scalp massage",
+      "Extra time for facial massage",
+      "Hot stones",
       "Red light therapy",
     ],
     price: "$175",
@@ -134,7 +151,9 @@ export const services: readonly Service[] = [
     name: "New Client Special",
     summary:
       "The full signature facial, at a first-visit price. Includes scalp, hand and arm massage.",
-    body: "The same hour as the signature facial — lymphatic drainage, sculpting, scalp, hands, and arms — offered once, for anyone who has not been to the table before.",
+    body: [
+      "Our Signature Xochi Facial — lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage, finished with arm and hand massage — offered once, for anyone who has not been to the table before.",
+    ],
     includes: [
       "The full signature facial",
       "Scalp massage",
@@ -146,6 +165,36 @@ export const services: readonly Service[] = [
     ornament: "seed",
   },
 ] as const;
+
+export type AddOn = {
+  slug: string;
+  name: string;
+  summary: string;
+  availability: string;
+  price: string;
+  duration: string;
+  ornament: OrnamentName;
+};
+
+/** Booked alongside a facial. From Square, 2026-11-18. */
+export const addOns: readonly AddOn[] = [
+  {
+    slug: "buccal-massage",
+    name: "Buccal Massage",
+    summary:
+      "A specialized facial massage combining gentle intra-oral and external techniques to work with the deeper muscles of the cheeks and jaw. This intentional treatment focuses on releasing muscular tension and complementing your facial sculpting experience, leaving the face feeling relaxed and refreshed.",
+    availability: "Available as an add-on to any facial.",
+    price: "$35",
+    duration: "20 min",
+    ornament: "double-moon",
+  },
+] as const;
+
+/** Square's free "Facial - Gift Certificate Booking" service, as a pointer. */
+export const giftCertificate = {
+  title: "Holding a gift certificate?",
+  body: "Choose “Facial - Gift Certificate Booking” in the calendar below, and bring your gift certificate to your appointment for redemption.",
+} as const;
 
 /**
  * Nicole's own five benefits, from her Instagram. Emoji and hashtags stripped
