@@ -59,7 +59,7 @@ import {
 
 const PAGES: [string, string][] = [
   ["/", "Home"],
-  ["/practice", "Practice"],
+  ["/about", "About"],
   ["/letter", "Letter"],
   ["/book", "Book"],
 ];

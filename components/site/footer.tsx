@@ -24,7 +24,7 @@ export function Footer() {
         <div className="flex flex-col items-center text-center">
           <PortraitMark size={84} />
           <h2 className="text-title text-ink mt-10 max-w-xl">{voice.bloom}</h2>
-          <p className="eyebrow-caps text-ink-soft mt-8">{voice.moon}</p>
+          <p className="eyebrow-caps text-ink-soft mt-8">{voice.slowDown}</p>
         </div>
 
         <div className="mx-auto my-16 max-w-sm text-ink-soft/40">

@@ -29,8 +29,6 @@ export type BookingConfig = {
   bookingUrl: string;
   /** iframe src. Often differs from bookingUrl; check the provider's embed docs. */
   embedUrl?: string;
-  /** Starting height in px. The frame grows on larger viewports. */
-  minHeight?: number;
 };
 
 export const booking: BookingConfig = {
@@ -38,49 +36,43 @@ export const booking: BookingConfig = {
   provider: "Square",
 
   /**
-   * Square gives merchants a <script> snippet to paste. We deliberately do not
-   * use it. Reading that script shows it does exactly one useful thing — insert
-   * an iframe pointing at the widget URL below — plus some defensive handling
-   * for Wix and Weebly page editors that does not apply to us. Embedding the
-   * iframe ourselves avoids running third-party JavaScript on the site, and
-   * lets us own the loading state, the height, and the fallback.
+   * Square gives merchants a <script> snippet that inserts an iframe pointing
+   * at a widget URL (app.squareup.com/appointments/buyer/widget/…). Following
+   * that URL shows it only redirects, twice, to the public booking page below.
+   * So we frame the booking page directly: no third-party script on the site,
+   * two fewer redirects, and — the reason it matters — the booking page
+   * accepts a service in the path (…/services/<id>), opening the calendar on
+   * that service. The widget URL does not; it 404s with a service appended.
    *
-   * Verified: the widget sends no X-Frame-Options, and its enforced CSP sets no
+   * Verified 2026-11-18: the booking page sends no X-Frame-Options and no
    * frame-ancestors, so it embeds cleanly. (Google Appointments sends
    * X-Frame-Options SAMEORIGIN and cannot be embedded at all — that is why we
    * moved.)
    *
-   * Both IDs are the public merchant and location tokens from her embed
-   * snippet, not secrets.
+   * The merchant and location tokens are public, not secrets.
    */
   bookingUrl:
     "https://book.squareup.com/appointments/tx8afy4wdmiz9i/location/LCZ20MKVHF3Y5/services",
   embedUrl:
-    "https://app.squareup.com/appointments/buyer/widget/tx8afy4wdmiz9i/LCZ20MKVHF3Y5",
-  minHeight: 760,
+    "https://book.squareup.com/appointments/tx8afy4wdmiz9i/location/LCZ20MKVHF3Y5/services",
 };
+
+/**
+ * The id the calendar sits under on /book, and the anchor service links point
+ * at. Lives here, not beside the calendar component: a value exported from a
+ * "use client" file reaches server components as a reference, not a string.
+ */
+export const CALENDAR_ID = "choose-a-time";
 
 export const bookingReady = booking.mode !== "pending";
 export const bookingInline = booking.mode === "embed" && Boolean(booking.embedUrl);
 
-/** The three steps shown above the booking frame. */
-export const bookingSteps = [
-  {
-    ordinal: "01",
-    title: "Choose your session",
-    body: "The full hour, a shorter visit, or your first time at the table.",
-    ornament: "seed",
-  },
-  {
-    ordinal: "02",
-    title: "Pick a time",
-    body: "Availability is live. You will get a confirmation straight away.",
-    ornament: "sprout",
-  },
-  {
-    ordinal: "03",
-    title: "Come as you are",
-    body: "A clean face helps but is not required. We cleanse at the table.",
-    ornament: "xochitl",
-  },
-] as const;
+/**
+ * The booking page opened on one service. Square keeps the chosen service in
+ * its own storage, not the URL, so this is as far as a link can go: the
+ * client lands on that service and presses Add, rather than finding it in the
+ * list first.
+ */
+export function serviceBookingUrl(base: string, squareId?: string) {
+  return squareId ? `${base}/${squareId}` : base;
+}

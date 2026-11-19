@@ -157,7 +157,7 @@ export function Header({ solid }: { solid?: boolean }) {
               <span className="text-accent-honey">
                 <Ornament
                   name={
-                    item.href === "/practice"
+                    item.href === "/about"
                       ? "marigold"
                       : item.href === "/letter"
                         ? "branch"

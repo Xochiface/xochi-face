@@ -72,10 +72,10 @@ export default function HomePage() {
                 Book a session
               </Link>
               <Link
-                href="/practice"
+                href="/about"
                 className="label-caps text-ink border-rule rounded-pill duration-quick ease-exhale hover:bg-surface-raised border px-8 py-4 transition-colors"
               >
-                The practice
+                About Xochi
               </Link>
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function HomePage() {
               {services.map((s) => (
                 <Link
                   key={s.slug}
-                  href={`/practice#${s.slug}`}
+                  href={`/book?service=${s.slug}`}
                   className="sm:max-lg:first:col-span-2 bg-surface-raised shadow-rest hover:shadow-lift duration-calm ease-exhale group flex flex-col rounded-md border border-rule/40 p-8 transition-all hover:-translate-y-1"
                 >
                   <div className="text-honey mb-6">
@@ -266,8 +266,8 @@ export default function HomePage() {
         {/* -------------------------------------------------------------- */}
         <section className="night bg-surface text-ink">
           <div className="mx-auto max-w-3xl px-5 py-28 text-center md:px-10 md:py-40">
-            <p className="eyebrow-caps text-ink-soft">You&rsquo;re invited</p>
-            <h2 className="text-title text-ink mt-8">{voice.moon}</h2>
+            <p className="eyebrow-caps text-ink-soft">Whenever you&rsquo;re ready</p>
+            <h2 className="text-title text-ink mt-8">{voice.slowDown}</h2>
             <p className="text-lead text-ink-muted mx-auto mt-8 max-w-lg italic">
               {site.location}, {site.availability}. The table is set before you
               walk in the door.

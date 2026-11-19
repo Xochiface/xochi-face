@@ -20,6 +20,11 @@ function localAddresses(): string[] {
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: localAddresses(),
+
+  /** /practice became /about on 2026-11-18; services moved to /book. */
+  async redirects() {
+    return [{ source: "/practice", destination: "/about", permanent: true }];
+  },
 };
 
 export default nextConfig;

@@ -58,7 +58,7 @@ export const site = {
 };
 
 export const nav = [
-  { href: "/practice", label: "The practice" },
+  { href: "/about", label: "About" },
   { href: "/letter", label: "A letter" },
   { href: "/book", label: "Book" },
 ] as const;
@@ -68,23 +68,28 @@ export type Service = {
   eyebrow: string;
   name: string;
   summary: string;
-  /** Paragraphs for the Practice page, after the summary. */
+  /** Paragraphs for the Book page, after the summary. */
   body: readonly string[];
   includes: readonly string[];
   price: string;
   duration: string;
   ornament: OrnamentName;
   featured?: boolean;
+  /**
+   * Square's ID for this service, from its booking page URL
+   * (…/services/<id>). Lets a "book this" link open the calendar on it.
+   */
+  squareId: string;
 };
 
 /**
  * The services live on Nicole's Square booking page. Last read from it on
- * 2026-11-18, after she rewrote the descriptions there. Names, prices,
- * durations and wording mirror Square — if these disagree with the booking
- * page, the booking page is right and this file is stale.
+ * 2026-11-18, after she renamed the 90 minute session "The Goddess Facial".
+ * Names, prices, durations and wording mirror Square — if these disagree with
+ * the booking page, the booking page is right and this file is stale.
  *
- * Square's first sentence or paragraph is the summary (the cards); the rest
- * is the body (the Practice page).
+ * Square's first sentence or paragraph is the summary (the home cards); the
+ * rest is the body (the Book page).
  *
  * Also on Square, deliberately not shown as a service card:
  *   - "30 minutes in heaven" (30 min, $80), left off at Jake's request on
@@ -95,7 +100,7 @@ export type Service = {
  *
  * Note on the brand kit: it specifies a different menu again — "the ninety"
  * (90 min, $220), "the sixty" (60 min, $160), "the new moon" ($380/month).
- * Her real pricing has moved toward it (the 90 minute Lymphatic at $175 is
+ * Her real pricing has moved toward it (the 90 minute Goddess Facial at $175 is
  * close to the kit's $220), but the naming and the monthly membership still
  * do not exist. The site follows what can actually be booked.
  */
@@ -120,11 +125,12 @@ export const services: readonly Service[] = [
     duration: "60 min",
     ornament: "marigold",
     featured: true,
+    squareId: "D7S2EKXXO7ZOVPMTA5RJ6PAR",
   },
   {
-    slug: "ninety-minute-lymphatic",
+    slug: "goddess-facial",
     eyebrow: "The full arc",
-    name: "90 minute Lymphatic",
+    name: "The Goddess Facial",
     summary:
       "An extended holistic facial thoughtfully tailored to your skin's individual needs. Beginning with a customized cleanse and a carefully selected treatment mask, this experience brings together lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage.",
     body: [
@@ -143,6 +149,7 @@ export const services: readonly Service[] = [
     price: "$175",
     duration: "90 min",
     ornament: "xochitl",
+    squareId: "HDR7XYERGDGDFUFCJ3EWSWYD",
   },
   {
     slug: "new-client-special",
@@ -162,6 +169,7 @@ export const services: readonly Service[] = [
     price: "$100",
     duration: "60 min",
     ornament: "seed",
+    squareId: "53AO242THIEZME67J2P76TTZ",
   },
 ] as const;
 
@@ -192,8 +200,48 @@ export const addOns: readonly AddOn[] = [
 /** Square's free "Facial - Gift Certificate Booking" service, as a pointer. */
 export const giftCertificate = {
   title: "Holding a gift certificate?",
-  body: "Choose “Facial - Gift Certificate Booking” in the calendar below, and bring your gift certificate to your appointment for redemption.",
+  body: "Choose “Facial - Gift Certificate Booking” in the calendar, and bring your gift certificate to your appointment for redemption.",
 } as const;
+
+/**
+ * The techniques, for the About page. Assembled from Nicole's own service
+ * descriptions on Square and her earlier words on the site — nothing here is
+ * a new claim — but she has not reviewed them as a set yet.
+ *
+ * Products are not listed: we do not know which she uses. Ask before adding.
+ */
+export const techniques = [
+  {
+    name: "Manual lymphatic drainage",
+    body: "Gentle, rhythmic work that moves lymph toward the body's natural drainage points, supporting lymphatic flow and easing puffiness.",
+    ornament: "sprout",
+  },
+  {
+    name: "Russian facial sculpting",
+    body: "Intentional massage for the muscles of the face, relieving facial tension and encouraging a refreshed, sculpted appearance.",
+    ornament: "agave",
+  },
+  {
+    name: "Traditional Chinese Medicine-inspired scalp massage",
+    body: "Part of every facial, because the face does not hold tension in isolation.",
+    ornament: "branch",
+  },
+  {
+    name: "Buccal massage",
+    body: "Gentle intra-oral and external techniques for the deeper muscles of the cheeks and jaw.",
+    ornament: "double-moon",
+  },
+  {
+    name: "A customized cleanse and mask",
+    body: "A cleanse and treatment mask chosen for your skin's individual needs.",
+    ornament: "seed",
+  },
+  {
+    name: "Hot stones and red light therapy",
+    body: "The soothing warmth that closes The Goddess Facial, leaving you restored, relaxed, and cared for from within.",
+    ornament: "sun",
+  },
+] as const satisfies readonly { name: string; body: string; ornament: OrnamentName }[];
 
 /**
  * Nicole's own five benefits, from her Instagram. Emoji and hashtags stripped
@@ -242,7 +290,8 @@ export const voice = {
     "Sometimes, the most beautiful thing you can do for yourself is slow down to find yourself in your breath.",
   bloom: "every flower blooms from within.",
   softness: "a return to softness.",
-  moon: "come back with the moon.",
+  /** From Nicole's own description of the practice. */
+  slowDown: "an invitation to slow down.",
   table: "the table is set before you walk in the door.",
   exchange: "an exchange that happens deeper than the skin.",
   stories: "our face tells stories.",
