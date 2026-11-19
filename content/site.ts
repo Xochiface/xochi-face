@@ -105,10 +105,9 @@ export const services: readonly Service[] = [
     eyebrow: "The signature bloom",
     name: "Xochi Signature Facial",
     summary:
-      "A holistic cleansing facial that brings together lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage.",
+      "A holistic cleansing facial that brings together lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage. Finished with a relaxing arm and hand massage for a complete experience of restoration and care.",
     body: [
       "Each treatment is thoughtfully designed to support skin health, relieve facial tension, and encourage a refreshed, sculpted appearance.",
-      "Finished with relaxing arm and hand massage for a complete experience of restoration and care.",
     ],
     includes: [
       "Cleansing",
@@ -240,7 +239,7 @@ export const anatomy = [
 
 export const voice = {
   thesis:
-    "sometimes, the most beautiful thing you can do for yourself is slow down to find yourself in your breath.",
+    "Sometimes, the most beautiful thing you can do for yourself is slow down to find yourself in your breath.",
   bloom: "every flower blooms from within.",
   softness: "a return to softness.",
   moon: "come back with the moon.",
@@ -258,7 +257,7 @@ export const philosophy = {
   welcome:
     "I've always believed that beauty isn't about adding more or changing yourself — it's about feeling good, and a lot of that has to do with clearing away what no longer serves us.",
   mission:
-    "Inspired by Xochiquetzal, the Aztec goddess associated with beauty, fertility, flowers, and feminine creativity, XOCHI celebrates a beauty that is delicate yet abundant, ever-changing yet deeply rooted.",
+    "Inspired by Xochiquetzal, the Aztec goddess of beauty, fertility, flowers, and feminine creativity, XOCHI celebrates a beauty that is delicate yet abundant, ever-changing yet deeply rooted.",
   why: "I started Xochi because I saw how much of a difference manual lymphatic drainage makes — not just for a sculpted jawline, but for how we feel.",
   who: "A more intentional approach to skin health, facial massage, and lymphatic care. An invitation to slow down, release tension, and reconnect with yourself.",
   balance:

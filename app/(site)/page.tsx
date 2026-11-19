@@ -169,8 +169,7 @@ export default function HomePage() {
             </div>
 
             <blockquote>
-              <p className="label-caps text-ink-soft">A note from Nicole</p>
-              <p className="text-quote font-poetic text-ink mt-8 font-light italic">
+              <p className="text-quote font-poetic text-ink font-light italic">
                 {voice.thesis}
               </p>
               <footer className="label-caps text-ink-soft mt-10">
