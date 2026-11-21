@@ -5,6 +5,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "xochi-face",
   "compatibility_date": "2026-11-01",
+  // The site's addresses. Cloudflare attaches these (with HTTPS certificates)
+  // on deploy; the domain's DNS is on Cloudflare since 2026-11-21.
+  "routes": [
+    { "pattern": "xochiface.com", "custom_domain": true },
+    { "pattern": "www.xochiface.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./out",
     // /about serves about.html; /about/ redirects to /about.
