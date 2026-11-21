@@ -1,5 +1,8 @@
 import { networkInterfaces } from "node:os";
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
+
+import IMAGE_WIDTHS from "./lib/image-widths.json";
 
 /**
  * This computer's own local-network IPv4 addresses, read each time the dev
@@ -18,17 +21,48 @@ function localAddresses(): string[] {
     .map((i) => i.address);
 }
 
-const nextConfig: NextConfig = {
-  allowedDevOrigins: localAddresses(),
+const DEFAULT_EXTENSIONS = ["tsx", "ts", "jsx", "js"];
 
-  /** /practice became /about on 2026-11-18 (services moved to /book), and
-   *  the letter moved into /about on 2026-11-19. */
-  async redirects() {
-    return [
-      { source: "/practice", destination: "/about", permanent: true },
-      { source: "/letter", destination: "/about#letter", permanent: true },
-    ];
-  },
-};
+/**
+ * Two shapes of the same site.
+ *
+ * Development (`npm run dev`, on this computer): the full Next.js server, with
+ * edit mode's save and upload routes. Those routes are named route.dev.ts and
+ * only exist here, via pageExtensions.
+ *
+ * Production (`npm run build`): a static export to out/, hosted on Cloudflare
+ * as plain files. Everything a static host can't do is handled at build time
+ * or by Cloudflare instead —
+ *   - photos: resized ahead of time by scripts/size-images.mjs, picked by
+ *     lib/image-loader.ts (there is no image server to resize on request);
+ *   - redirects: public/_redirects, which Cloudflare reads;
+ *   - edit mode's routes: left out entirely (they write to this computer's
+ *     disk, which a host can't do — on the live site Save downloads a file).
+ */
+export default function config(phase: string): NextConfig {
+  if (phase === PHASE_DEVELOPMENT_SERVER) {
+    return {
+      allowedDevOrigins: localAddresses(),
+      pageExtensions: [...DEFAULT_EXTENSIONS, "dev.ts"],
 
-export default nextConfig;
+      // Mirrors public/_redirects, which serves the same purpose live.
+      async redirects() {
+        return [
+          { source: "/practice", destination: "/about", permanent: true },
+          { source: "/letter", destination: "/about#letter", permanent: true },
+        ];
+      },
+    };
+  }
+
+  return {
+    output: "export",
+    pageExtensions: DEFAULT_EXTENSIONS,
+    images: {
+      loader: "custom",
+      loaderFile: "./lib/image-loader.ts",
+      deviceSizes: IMAGE_WIDTHS.device,
+      imageSizes: IMAGE_WIDTHS.image,
+    },
+  };
+}

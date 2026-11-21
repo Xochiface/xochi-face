@@ -44,12 +44,15 @@ export function Footer() {
                 {item.label}
               </Link>
             ))}
-            <Link
-              href="/styleguide"
-              className="text-body text-ink-soft/60 hover:text-ink-muted duration-quick ease-exhale mt-2 w-fit text-sm italic transition-colors"
-            >
-              Styleguide (internal)
-            </Link>
+            {/* Internal: linked only on this computer, never on the live site. */}
+            {process.env.NODE_ENV === "development" ? (
+              <Link
+                href="/styleguide"
+                className="text-body text-ink-soft/60 hover:text-ink-muted duration-quick ease-exhale mt-2 w-fit text-sm italic transition-colors"
+              >
+                Styleguide (internal)
+              </Link>
+            ) : null}
           </nav>
 
           <div className="flex flex-col items-start gap-3">

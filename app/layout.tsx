@@ -32,12 +32,19 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
+  // Share previews and canonical links need absolute URLs.
+  metadataBase: new URL("https://xochiface.com"),
   title: {
     default: "Xochi Face — Lymphatic Facials in Austin, Texas",
     template: "%s · Xochi Face",
   },
   description:
     "Manual lymphatic drainage and facial sculpting — and a long, quiet moment with yourself. By appointment in Austin, Texas.",
+  openGraph: {
+    type: "website",
+    siteName: "Xochi Face",
+    locale: "en_US",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

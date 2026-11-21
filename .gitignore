@@ -42,3 +42,6 @@ next-env.d.ts
 
 # edit-mode packages (see EDITING.md)
 /edits/
+
+# cloudflare
+/.wrangler/

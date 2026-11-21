@@ -1,0 +1,4 @@
+# Old addresses, kept working. Cloudflare reads this file on the live site;
+# next.config.ts has the same two for local development.
+/practice  /about          301
+/letter    /about#letter   301

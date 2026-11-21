@@ -1,0 +1,15 @@
+// Cloudflare hosting for the live site: a static export served as plain files.
+// `npm run build` writes out/ (next.config.ts), and Cloudflare serves it from
+// its network. Static file requests are free and unlimited on the free plan.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "xochi-face",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./out",
+    // /about serves about.html; /about/ redirects to /about.
+    "html_handling": "auto-trailing-slash",
+    // Unknown addresses get the site's own 404 page.
+    "not_found_handling": "404-page"
+  }
+}

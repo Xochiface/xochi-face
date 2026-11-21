@@ -37,8 +37,9 @@ export function BookingEmbed({
 
   /**
    * Square moves focus inside its page a moment after loading, and the
-   * browser scrolls our page to show the focused element — measured at 170px
-   * on a desktop, in one jump, about 250ms after load. For a short window
+   * browser scrolls our page to show the focused element — measured at 170px,
+   * in one jump, ~250ms after load on fast Wi-Fi but later on a slow
+   * connection (it missed a 1.5s window on café Wi-Fi). For a few seconds
    * after each load, undo any scroll the visitor did not make themselves.
    */
   function holdScrollAfterLoad() {
@@ -58,7 +59,7 @@ export function BookingEmbed({
     setTimeout(() => {
       inputs.forEach((type) => window.removeEventListener(type, userMoved));
       window.removeEventListener("scroll", onScroll);
-    }, 1500);
+    }, 4000);
   }
 
   // If the provider has not painted within a reasonable window, surface the
