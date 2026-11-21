@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       skipped: [],
       files: [],
       commit: null,
+      pushed: false,
       commitNote: `Nothing was published — applying failed: ${String(error)}`,
     };
   }

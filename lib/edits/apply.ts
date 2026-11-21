@@ -27,7 +27,9 @@ import ts from "typescript";
  * Everything else — moves, size changes, video, notes, added items, and anything that
  * didn't match exactly once — stays in the package for a developer, and the
  * result says so. Touched files are committed, so every save can be undone,
- * unless they already held someone's uncommitted work.
+ * unless they already held someone's uncommitted work — and the commit is
+ * pushed to GitHub, which makes Cloudflare rebuild the live site (about two
+ * minutes).
  *
  * Development only: the caller (app/api/edits/route.ts) never runs this in
  * production.
@@ -60,12 +62,14 @@ export type ApplyResult = {
   files: string[];
   commit: string | null;
   commitNote: string | null;
+  /** Sent to GitHub, so the live site is rebuilding. */
+  pushed: boolean;
 };
 
 export async function applyPackage(pkg: {
   pages?: Record<string, PackagePage>;
 }): Promise<ApplyResult> {
-  const result: ApplyResult = { applied: [], skipped: [], files: [], commit: null, commitNote: null };
+  const result: ApplyResult = { applied: [], skipped: [], files: [], commit: null, commitNote: null, pushed: false };
   const pages = Object.entries(pkg.pages ?? {});
   const sources = await loadSources();
   const pending = new Map<string, Splice[]>();
@@ -217,6 +221,11 @@ export async function applyPackage(pkg: {
         await run("git", ["commit", "-m", `Edit mode: ${summary}`, "--", ...files], { cwd: ROOT });
         const { stdout } = await run("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT });
         result.commit = stdout.trim();
+        result.pushed = await push();
+        if (!result.pushed) {
+          result.commitNote =
+            "Saved on this computer, but couldn't reach GitHub, so the live site hasn't updated yet — tell Claude.";
+        }
       } catch {
         result.commitNote = "Published, but the commit failed — the files are changed but not yet committed.";
       }
@@ -574,6 +583,21 @@ async function dirty(files: string[]) {
     );
   } catch {
     return new Set(files);
+  }
+}
+
+/** Sends the branch to GitHub (origin), never prompting: a sign-in window
+ *  can't be answered from inside a save. Cloudflare deploys main. */
+async function push() {
+  try {
+    await run("git", ["push", "origin", "HEAD:main"], {
+      cwd: ROOT,
+      timeout: 60_000,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never" },
+    });
+    return true;
+  } catch {
+    return false;
   }
 }
 

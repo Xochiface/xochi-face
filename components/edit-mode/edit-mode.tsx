@@ -582,7 +582,9 @@ function EditTools() {
     const waiting = pkg.changeCount - published;
     const parts = [
       published
-        ? `Published ${published} change${published > 1 ? "s" : ""} to the site.`
+        ? reply.pushed
+          ? `Published ${published} change${published > 1 ? "s" : ""} — live on xochiface.com in about 2 minutes.`
+          : `Published ${published} change${published > 1 ? "s" : ""} on this computer.`
         : "Nothing could be published automatically.",
       waiting ? `${waiting} more saved for Claude to apply.` : "",
       reply.commitNote ?? "",
@@ -1023,6 +1025,7 @@ type SaveReply = {
   skipped: { page: string; selector: string; what: string; why: string }[];
   commit: string | null;
   commitNote: string | null;
+  pushed: boolean;
 };
 
 function buildPackage(s: EditState) {
