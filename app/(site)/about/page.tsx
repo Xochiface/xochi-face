@@ -32,7 +32,6 @@ export default function AboutPage() {
     <>
       <header className="bg-surface-sunken pt-40 pb-20 md:pt-52 md:pb-28">
         <div className="mx-auto max-w-7xl px-5 md:px-10">
-          <p className="label-caps text-ink-soft">About</p>
           <h1 className="text-display text-ink mt-6 max-w-3xl">
             {voice.softness}
           </h1>

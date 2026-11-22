@@ -285,7 +285,7 @@ export const voice = {
   /** Nicole's own lines, from Instagram. */
   tend: "we don't realize how much tension the face holds until we tend to it.",
   returning: "beauty isn't about changing who we are — it's about returning to ourselves.",
-  home: "restoration, reconnection, and coming home.",
+  home: "restore, reconnect, and recharge.",
 } as const;
 
 /** Nicole's words on why the practice exists. From her Instagram. */
