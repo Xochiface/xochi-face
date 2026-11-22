@@ -665,6 +665,7 @@ function summarize(applied: ApplyResult["applied"]) {
     count("media") && `${count("media")} photo${count("media") > 1 ? "s" : ""}`,
     count("delete") && `${count("delete")} removal${count("delete") > 1 ? "s" : ""}`,
     count("color") && `${count("color")} colour${count("color") > 1 ? "s" : ""}`,
+    count("framing") && `${count("framing")} reframed photo${count("framing") > 1 ? "s" : ""}`,
   ].filter(Boolean);
   return parts.join(", ");
 }
