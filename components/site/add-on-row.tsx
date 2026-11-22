@@ -5,8 +5,8 @@ import type { AddOn } from "@/content/site";
  * An add-on, set as a quiet strip beneath the service cards: it is booked
  * alongside a facial, so it should read as secondary to them.
  *
- * `compact` keeps only the first sentence of the summary, for the Home and
- * Book pages; the Practice page shows it whole.
+ * `compact` keeps only the first sentence of the summary, for the Home page;
+ * the Book page shows it whole.
  */
 export function AddOnRow({
   addOn,

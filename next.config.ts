@@ -27,8 +27,8 @@ const DEFAULT_EXTENSIONS = ["tsx", "ts", "jsx", "js"];
  * Two shapes of the same site.
  *
  * Development (`npm run dev`, on this computer): the full Next.js server, with
- * edit mode's save and upload routes. Those routes are named route.dev.ts and
- * only exist here, via pageExtensions.
+ * edit mode's save and upload routes and the internal styleguide. Those are
+ * named *.dev.ts / *.dev.tsx and only exist here, via pageExtensions.
  *
  * Production (`npm run build`): a static export to out/, hosted on Cloudflare
  * as plain files. Everything a static host can't do is handled at build time
@@ -43,7 +43,7 @@ export default function config(phase: string): NextConfig {
   if (phase === PHASE_DEVELOPMENT_SERVER) {
     return {
       allowedDevOrigins: localAddresses(),
-      pageExtensions: [...DEFAULT_EXTENSIONS, "dev.ts"],
+      pageExtensions: [...DEFAULT_EXTENSIONS, "dev.ts", "dev.tsx"],
 
       // Mirrors public/_redirects, which serves the same purpose live.
       async redirects() {

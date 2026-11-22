@@ -6,8 +6,8 @@ import type { OrnamentName } from "@/components/brand/ornament";
  * Two sources feed this file and they do not always agree:
  *
  *   1. The 2026 brand kit (design/brand-kit/) — the deliberate branding work.
- *   2. Nicole's live Instagram (@xochiface) and her live Google Appointments
- *      booking page, which is what clients can actually book today.
+ *   2. Nicole's live Instagram (@xochiface) and her live Square booking page,
+ *      which is what clients can actually book today.
  *
  * Where they conflict, **live reality wins** and the conflict is flagged in a
  * comment. Publishing the kit's aspirational prices would put numbers on the
@@ -35,11 +35,9 @@ export const site = {
    */
   wordmark: "xochi",
   name: "Xochi Face",
-  practitioner: "Nicole",
   /** Nicole holds a Texas esthetician license (confirmed by Jake, 2026-11-21). */
   credential: "Licensed esthetician",
   practice: "lymphatic facials",
-  positioning: "Lymphatic drainage facial specialist",
   location: "Austin, Texas",
   availability: "by appointment",
   /** The name in the footer's closing line. Was "Xochi Garden" until Jake
@@ -54,7 +52,6 @@ export const site = {
   /** Confirmed by Jake on 2026-11-18, from edit mode. */
   address: "12919 Nutty Brown Rd, Austin, TX 78737",
   email: "nicole@xochifacials.com",
-  hours: PENDING,
 };
 
 export const nav = [
@@ -73,7 +70,6 @@ export type Service = {
   price: string;
   duration: string;
   ornament: OrnamentName;
-  featured?: boolean;
   /**
    * Square's ID for this service, from its booking page URL
    * (…/services/<id>). Lets a "book this" link open the calendar on it.
@@ -123,7 +119,6 @@ export const services: readonly Service[] = [
     price: "$125",
     duration: "60 min",
     ornament: "marigold",
-    featured: true,
     squareId: "D7S2EKXXO7ZOVPMTA5RJ6PAR",
   },
   {
@@ -292,7 +287,6 @@ export const voice = {
   /** From Nicole's own description of the practice. */
   slowDown: "an invitation to slow down.",
   table: "the table is set before you walk in the door.",
-  exchange: "an exchange that happens deeper than the skin.",
   stories: "our face tells stories.",
   /** Nicole's own lines, from Instagram. */
   tend: "we don't realize how much tension the face holds until we tend to it.",
@@ -341,6 +335,4 @@ export const etymology = {
   word: "XOCHI",
   source: "INSPIRED BY XOCHIQUETZAL",
   meaning: "a symbol of beauty, nature, and self-nurturing.",
-  gloss:
-    "And every flower blooms from within. Xochi is a practice rooted in that idea — that beauty isn't made, it's tended.",
 } as const;
