@@ -308,7 +308,7 @@ export type FramingValue = { x: number; y: number; zoom: number };
  *  (SitePhoto writes it there from content/photos.ts). */
 export function readFraming(img: HTMLImageElement): FramingValue {
   const [x, y] = (img.style.objectPosition || "50% 50%").split(" ").map((v) => parseFloat(v));
-  const zoom = parseFloat(/scale(([d.]+))/.exec(img.style.transform)?.[1] ?? "1");
+  const zoom = parseFloat(/scale\(([\d.]+)\)/.exec(img.style.transform)?.[1] ?? "1");
   return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 50, zoom: zoom || 1 };
 }
 

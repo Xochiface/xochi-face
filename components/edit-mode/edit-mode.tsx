@@ -1079,6 +1079,12 @@ function ReframeOverlay({
     onFrame(f);
     setTick((t) => t + 1);
   };
+  // Read the photo at click time, not render time, so quick repeated taps
+  // each take a full step.
+  const zoomBy = (step: number) => {
+    const now = readFraming(img);
+    set({ ...now, zoom: now.zoom + step });
+  };
 
   function startDrag(e: React.PointerEvent) {
     e.preventDefault();
@@ -1121,13 +1127,13 @@ function ReframeOverlay({
         <span className="font-label px-1.5 text-[0.625rem] uppercase text-[#dcbc82]">
           Drag to reframe
         </span>
-        <button type="button" className={tool} onClick={() => set({ ...current, zoom: current.zoom - 0.1 })} title="Zoom out">
+        <button type="button" className={tool} onClick={() => zoomBy(-0.1)} title="Zoom out">
           −
         </button>
-        <span className="font-label w-10 text-center text-[0.6875rem] text-[#f7f1e2]">
+        <span data-zoom-label className="font-label w-10 text-center text-[0.6875rem] text-[#f7f1e2]">
           {Math.round(current.zoom * 100)}%
         </span>
-        <button type="button" className={tool} onClick={() => set({ ...current, zoom: current.zoom + 0.1 })} title="Zoom in">
+        <button type="button" className={tool} onClick={() => zoomBy(0.1)} title="Zoom in">
           +
         </button>
         <button type="button" className={tool} onClick={() => set({ x: 50, y: 50, zoom: 1 })}>
