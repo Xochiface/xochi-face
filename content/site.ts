@@ -36,6 +36,8 @@ export const site = {
   wordmark: "xochi",
   name: "Xochi Face",
   practitioner: "Nicole",
+  /** Nicole holds a Texas esthetician license (confirmed by Jake, 2026-11-21). */
+  credential: "Licensed esthetician",
   practice: "lymphatic facials",
   positioning: "Lymphatic drainage facial specialist",
   location: "Austin, Texas",

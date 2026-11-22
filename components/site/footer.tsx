@@ -86,7 +86,8 @@ export function Footer() {
         </div>
 
         <p className="label-caps text-ink-soft/60 mt-20 text-center">
-          {site.parent} · {site.location} · {site.year}
+          {site.parent} · {site.credential} · {site.location} ·{" "}
+          {site.year}
         </p>
       </div>
     </footer>
