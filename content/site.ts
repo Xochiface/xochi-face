@@ -197,7 +197,7 @@ export const addOns: readonly AddOn[] = [
 /** Square's free "Facial - Gift Certificate Booking" service, as a pointer. */
 export const giftCertificate = {
   title: "Holding a gift certificate?",
-  body: "Choose “Facial - Gift Certificate Booking” in the calendar, and bring your gift certificate to your appointment for redemption.",
+  body: "Choose “Facial - Gift Certificate Booking” on Nicole’s booking page, and bring your gift certificate to your appointment for redemption.",
 } as const;
 
 /**

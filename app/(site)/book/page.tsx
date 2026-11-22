@@ -1,20 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
 import { AddOnRow } from "@/components/site/add-on-row";
-import {
-  BookingCalendar,
-  ChooseService,
-} from "@/components/site/booking-calendar";
-import { BookingEmbed } from "@/components/site/booking-embed";
-import {
-  booking,
-  bookingInline,
-  bookingReady,
-  CALENDAR_ID,
-} from "@/content/booking";
+import { booking, serviceBookingUrl } from "@/content/booking";
 import {
   addOns,
   giftCertificate,
@@ -34,9 +23,9 @@ const primaryButton =
   "label-caps bg-primary text-primary-foreground shadow-rest hover:shadow-lift rounded-pill duration-quick ease-exhale inline-block px-8 py-4 text-center transition-all hover:-translate-y-0.5";
 
 /**
- * The one booking page. Every facial is described once, here, beside the
- * calendar: choosing one opens Square on that service. On large screens the
- * calendar stays in view while the list scrolls past it.
+ * The one booking page. Every facial is described once, here; its button
+ * opens Nicole's Square booking page on that facial, where the visitor picks
+ * a time and pays (see content/booking.ts for why it's a link, not a frame).
  */
 export default function BookPage() {
   return (
@@ -48,133 +37,111 @@ export default function BookPage() {
             {voice.slowDown}
           </h1>
           <p className="text-lead text-ink-muted mt-8 max-w-xl italic">
-            {site.location}, {site.availability}. Choose a facial, then pick a
-            time in the calendar.
+            {site.location}, {site.availability}. Choose a facial — you&rsquo;ll
+            pick your time on Nicole&rsquo;s booking page.
           </p>
         </div>
       </header>
 
       <div className="bg-surface">
-        <div className="mx-auto grid max-w-7xl gap-16 px-5 py-16 md:px-10 md:py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 xl:gap-24">
-          {/* The facials ------------------------------------------------- */}
-          <div className="min-w-0">
-            {services.map((s, i) => (
-              <article
-                key={s.slug}
-                id={s.slug}
-                className={`scroll-mt-28 ${i > 0 ? "mt-16 border-t border-rule/40 pt-16" : ""}`}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-honey">
-                    <Ornament name={s.ornament} size={32} />
+        {/* The facials --------------------------------------------------- */}
+        <div className="mx-auto max-w-3xl px-5 py-16 md:px-10 md:py-24">
+          {services.map((s, i) => (
+            <article
+              key={s.slug}
+              id={s.slug}
+              className={`scroll-mt-28 ${i > 0 ? "mt-16 border-t border-rule/40 pt-16" : ""}`}
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-honey">
+                  <Ornament name={s.ornament} size={32} />
+                </span>
+                <p className="label-caps text-ink-soft">{s.eyebrow}</p>
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
+                <h2 className="text-title text-ink">{s.name}</h2>
+                <p className="flex items-baseline gap-5">
+                  <span className="font-display text-ink text-3xl font-[350]">
+                    {s.price}
                   </span>
-                  <p className="label-caps text-ink-soft">{s.eyebrow}</p>
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
-                  <h2 className="text-title text-ink">{s.name}</h2>
-                  <p className="flex items-baseline gap-5">
-                    <span className="font-display text-ink text-3xl font-[350]">
-                      {s.price}
-                    </span>
-                    <span className="label-caps text-ink-soft">
-                      {s.duration}
-                    </span>
-                  </p>
-                </div>
-
-                <p className="text-lead text-ink-muted mt-6 italic">
-                  {s.summary}
+                  <span className="label-caps text-ink-soft">
+                    {s.duration}
+                  </span>
                 </p>
-                {s.body.map((paragraph) => (
-                  <p
-                    key={paragraph}
-                    className="text-body text-ink-muted mt-5 italic"
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-
-                <ul className="mt-8 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-                  {s.includes.map((item) => (
-                    <li
-                      key={item}
-                      className="text-body text-ink flex items-start gap-3"
-                    >
-                      <span className="text-accent-sage mt-1">
-                        <Ornament name="sprout" size={16} />
-                      </span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-10">
-                  {bookingInline ? (
-                    <ChooseService slug={s.slug} className={primaryButton}>
-                      Book {s.name}
-                    </ChooseService>
-                  ) : bookingReady ? (
-                    <a
-                      href={booking.bookingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={primaryButton}
-                    >
-                      Book {s.name}
-                    </a>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-
-            <div className="mt-16 border-t border-rule/40 pt-16">
-              <p className="label-caps text-ink-soft mb-8">Add to any facial</p>
-              <div className="space-y-6">
-                {addOns.map((a) => (
-                  <AddOnRow key={a.slug} addOn={a} />
-                ))}
               </div>
-              <p className="text-body text-ink-muted mt-6 italic">
-                Add it in the calendar, after you choose your facial.
+
+              <p className="text-lead text-ink-muted mt-6 italic">
+                {s.summary}
               </p>
-            </div>
+              {s.body.map((paragraph) => (
+                <p
+                  key={paragraph}
+                  className="text-body text-ink-muted mt-5 italic"
+                >
+                  {paragraph}
+                </p>
+              ))}
 
-            <div className="mt-16 flex items-start gap-5 rounded-md border border-dashed border-rule p-8">
-              <span className="text-accent-sage">
-                <Ornament name="offering" size={26} />
-              </span>
-              <div>
-                <p className="font-display text-ink text-xl font-[350]">
-                  {giftCertificate.title}
-                </p>
-                <p className="text-body text-ink-muted mt-2 italic">
-                  {giftCertificate.body}
-                </p>
+              <ul className="mt-8 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                {s.includes.map((item) => (
+                  <li
+                    key={item}
+                    className="text-body text-ink flex items-start gap-3"
+                  >
+                    <span className="text-accent-sage mt-1">
+                      <Ornament name="sprout" size={16} />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
+                <a href={serviceBookingUrl(s.squareId)} className={primaryButton}>
+                  Book {s.name}
+                </a>
+                <span className="label-caps text-ink-soft">
+                  Times &amp; payment on {booking.provider}
+                </span>
               </div>
+            </article>
+          ))}
+
+          <div className="mt-16 border-t border-rule/40 pt-16">
+            <p className="label-caps text-ink-soft mb-8">Add to any facial</p>
+            <div className="space-y-6">
+              {addOns.map((a) => (
+                <AddOnRow key={a.slug} addOn={a} />
+              ))}
             </div>
+            <p className="text-body text-ink-muted mt-6 italic">
+              Square offers it after you choose your facial.
+            </p>
           </div>
 
-          {/* The calendar ------------------------------------------------ */}
-          {bookingInline ? (
-            <div
-              id={CALENDAR_ID}
-              className="min-w-0 scroll-mt-28 lg:sticky lg:top-28 lg:self-start"
-            >
-              <Suspense fallback={<BookingEmbed src={null} />}>
-                <BookingCalendar />
-              </Suspense>
-            </div>
-          ) : !bookingReady ? (
-            <div className="rounded-md border border-dashed border-rule px-8 py-10 text-center lg:self-start">
-              <p className="label-caps text-ink-soft">Not yet connected</p>
-              <p className="text-body text-ink-muted mt-4 italic">
-                Set <code className="text-ink">mode</code> and{" "}
-                <code className="text-ink">embedUrl</code> in{" "}
-                <code className="text-ink">content/booking.ts</code>.
+          <div className="mt-16 flex items-start gap-5 rounded-md border border-dashed border-rule p-8">
+            <span className="text-accent-sage">
+              <Ornament name="offering" size={26} />
+            </span>
+            <div>
+              <p className="font-display text-ink text-xl font-[350]">
+                {giftCertificate.title}
               </p>
+              <p className="text-body text-ink-muted mt-2 italic">
+                {giftCertificate.body}
+              </p>
+              <a
+                href={booking.bookingUrl}
+                className="label-caps text-ink-muted hover:text-ink duration-quick ease-exhale group mt-5 inline-flex items-center gap-3 transition-colors"
+              >
+                Open the booking page
+                <span className="duration-quick ease-exhale inline-block transition-transform group-hover:translate-x-1">
+                  →
+                </span>
+              </a>
             </div>
-          ) : null}
+          </div>
         </div>
 
         {/* Before you come ------------------------------------------------ */}

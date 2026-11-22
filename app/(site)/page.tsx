@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
 import { AddOnRow } from "@/components/site/add-on-row";
+import { serviceBookingUrl } from "@/content/booking";
 import { photoAttrs, photos } from "@/content/photos";
 import {
   anatomy,
@@ -118,11 +119,12 @@ export default function HomePage() {
               </p>
             </header>
 
+            {/* Each card opens Nicole's Square booking page on that facial. */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {services.map((s) => (
-                <Link
+                <a
                   key={s.slug}
-                  href={`/book?service=${s.slug}`}
+                  href={serviceBookingUrl(s.squareId)}
                   className="sm:max-lg:first:col-span-2 bg-surface-raised shadow-rest hover:shadow-lift duration-calm ease-exhale group flex flex-col rounded-md border border-rule/40 p-8 transition-all hover:-translate-y-1"
                 >
                   <div className="text-honey mb-6">
@@ -141,7 +143,7 @@ export default function HomePage() {
                     </span>
                     <span className="label-caps text-ink-soft">{s.duration}</span>
                   </div>
-                </Link>
+                </a>
               ))}
             </div>
 

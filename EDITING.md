@@ -150,8 +150,8 @@ Claude they're there. They stay in your draft until they're applied.
   rebuilt properly so they also work on phones — not pasted in as pixel offsets.
 - **Text with mixed styling** — a heading with one italic word, say — shows as
   plain text while you edit it. The styling is restored when the change is applied.
-- **The Square booking calendar** can't be edited; it's Square's own page inside a
-  frame. Pin a note next to it instead.
+- **Booking** happens on Nicole's Square page, which edit mode can't reach.
+  Services, prices and times are changed in Square itself.
 
 ## For developers
 
