@@ -83,9 +83,6 @@ export default function HomePage() {
           <p className="font-display text-ink mt-8 text-4xl font-[350] md:text-5xl">
             {etymology.word}
           </p>
-          <p className="font-label text-ink-soft mt-4 text-sm tracking-widest">
-            {etymology.source}
-          </p>
           <h2 className="text-title text-ink mt-10">{etymology.meaning}</h2>
           <p className="text-lead text-ink-muted mx-auto mt-8 max-w-2xl italic">
             {philosophy.mission}
@@ -217,8 +214,7 @@ export default function HomePage() {
             />
 
             <div>
-              <p className="label-caps text-ink-soft">{letter.eyebrow}</p>
-              <h2 className="text-title text-ink mt-5">{letter.title}</h2>
+              <h2 className="text-title text-ink">{letter.title}</h2>
               <p className="text-body text-ink-muted mt-8 italic">
                 {letter.paragraphs[0]}
               </p>
@@ -246,8 +242,7 @@ export default function HomePage() {
             <p className="eyebrow-caps text-ink-soft">Whenever you&rsquo;re ready</p>
             <h2 className="text-title text-ink mt-8">{voice.slowDown}</h2>
             <p className="text-lead text-ink-muted mx-auto mt-8 max-w-lg italic">
-              {site.location}, {site.availability}. The table is set before you
-              walk in the door.
+              {site.location}, {site.availability}.
             </p>
             <Link
               href="/book"

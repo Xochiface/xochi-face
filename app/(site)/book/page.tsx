@@ -97,14 +97,12 @@ export default function BookPage() {
                 ))}
               </ul>
 
-              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3">
-                <a href={serviceBookingUrl(s.squareId)} className={primaryButton}>
-                  Book {s.name}
-                </a>
-                <span className="label-caps text-ink-soft">
-                  Times &amp; payment on {booking.provider}
-                </span>
-              </div>
+              <a
+                href={serviceBookingUrl(s.squareId)}
+                className={`${primaryButton} mt-10`}
+              >
+                Book {s.name}
+              </a>
             </article>
           ))}
 

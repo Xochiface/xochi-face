@@ -154,12 +154,7 @@ export const services: readonly Service[] = [
     body: [
       "Our Signature Xochi Facial — lymphatic drainage, Russian facial sculpting, and Traditional Chinese Medicine-inspired scalp massage, finished with arm and hand massage — offered once, for anyone who has not been to the table before.",
     ],
-    includes: [
-      "The full signature facial",
-      "Scalp massage",
-      "Hand and arm massage",
-      "First visit only",
-    ],
+    includes: ["The full signature facial", "First visit only"],
     price: "$100",
     duration: "60 min",
     ornament: "seed",
@@ -286,7 +281,6 @@ export const voice = {
   softness: "a return to softness.",
   /** From Nicole's own description of the practice. */
   slowDown: "an invitation to slow down.",
-  table: "the table is set before you walk in the door.",
   stories: "our face tells stories.",
   /** Nicole's own lines, from Instagram. */
   tend: "we don't realize how much tension the face holds until we tend to it.",
@@ -310,11 +304,9 @@ export const philosophy = {
 
 /** The founder's letter. The kit's long-form page and her Instagram post agree. */
 export const letter = {
-  eyebrow: "A letter from the gardener",
   season: "Spring 2026",
   title: "a letter from Nicole.",
   signature: "— Nicole",
-  role: "Founder · Gardener · Practitioner",
   paragraphs: [
     "I'm so excited to be sharing this experience with others. To me, this work is not just about supporting the lymphatic system or sculpting the face — which is amazing in itself. There's also an exchange that happens deeper than the skin.",
     "My table is not just here to melt muscular tension away. It is prepared before you walk in the door, and set with the intention of helping release the root cause of that tension.",
@@ -333,6 +325,5 @@ export const letter = {
  */
 export const etymology = {
   word: "XOCHI",
-  source: "INSPIRED BY XOCHIQUETZAL",
   meaning: "a symbol of beauty, nature, and self-nurturing.",
 } as const;

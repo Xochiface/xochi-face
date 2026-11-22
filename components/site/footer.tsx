@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip } from "@/components/brand/ornament";
-import { nav, PENDING, site, voice } from "@/content/site";
+import { nav, PENDING, site } from "@/content/site";
 
 /** Values Nicole has not supplied yet render as a visible marker, never invented. */
 function Pending({ label }: { label: string }) {
@@ -23,8 +23,6 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-5 py-20 md:px-10 md:py-28">
         <div className="flex flex-col items-center text-center">
           <PortraitMark size={84} />
-          <h2 className="text-title text-ink mt-1.5 max-w-xl">{voice.bloom}</h2>
-          <p className="eyebrow-caps text-ink-soft mt-9">{voice.slowDown}</p>
         </div>
 
         <div className="mx-auto my-16 max-w-sm text-ink-soft/40">

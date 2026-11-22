@@ -77,7 +77,7 @@ export default function AboutPage() {
         >
           <header className="mx-auto max-w-3xl px-5 pt-24 pb-16 text-center md:px-10 md:pt-32">
             <p className="label-caps text-ink-soft">
-              {letter.eyebrow} · {letter.season}
+              {letter.season}
             </p>
 
             <div className="text-ink my-10 flex justify-center">
@@ -123,7 +123,6 @@ export default function AboutPage() {
               <p className="font-display text-ink mt-3 text-5xl font-[350] italic">
                 {letter.signature}
               </p>
-              <p className="label-caps text-ink-soft mt-8">{letter.role}</p>
             </footer>
           </div>
         </article>
@@ -190,8 +189,7 @@ export default function AboutPage() {
             />
 
             <div>
-              <p className="label-caps text-ink-soft">What happens</p>
-              <h2 className="text-title text-ink mt-6">{voice.table}</h2>
+              <h2 className="text-title text-ink">what happens at the table.</h2>
               <p className="text-body text-ink-muted mt-8 italic">
                 We begin at the neck and collarbone, because the face drains
                 downward and nothing moves until that door is open. Then the
@@ -199,8 +197,7 @@ export default function AboutPage() {
               </p>
               <p className="text-body text-ink-muted mt-5 italic">
                 Then the sculpting, and the scalp, arms and hands — because the
-                face does not hold tension in isolation. It is slower than it
-                sounds. Nothing is forced.
+                face does not hold tension in isolation.
               </p>
 
               <div className="text-accent-honey/50 mt-12 max-w-xs">

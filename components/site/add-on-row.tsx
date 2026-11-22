@@ -5,8 +5,9 @@ import type { AddOn } from "@/content/site";
  * An add-on, set as a quiet strip beneath the service cards: it is booked
  * alongside a facial, so it should read as secondary to them.
  *
- * `compact` keeps only the first sentence of the summary, for the Home page;
- * the Book page shows it whole.
+ * `compact` is the Home version: the first sentence of the summary, labelled
+ * and explained. The Book page shows the whole summary under its own "Add to
+ * any facial" heading, so it skips the label and the availability line.
  */
 export function AddOnRow({
   addOn,
@@ -27,12 +28,12 @@ export function AddOnRow({
       </div>
 
       <div>
-        <p className="label-caps text-ink-soft">Add-on</p>
-        <h3 className="font-display text-ink mt-3 text-[1.6875rem] leading-[1.15] font-[350]">
+        {compact ? <p className="label-caps text-ink-soft mb-3">Add-on</p> : null}
+        <h3 className="font-display text-ink text-[1.6875rem] leading-[1.15] font-[350]">
           {addOn.name}
         </h3>
         <p className="text-body text-ink-muted mt-4 max-w-2xl italic">
-          {summary} {addOn.availability}
+          {compact ? `${summary} ${addOn.availability}` : summary}
         </p>
       </div>
 
