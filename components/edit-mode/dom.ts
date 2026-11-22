@@ -124,6 +124,12 @@ export function applyPage(page: PageEdits | undefined, { includeText }: { includ
     if (el instanceof HTMLImageElement) applyMedia(el, m.kind, m.preview);
   }
 
+  for (const f of Object.values(page.framing ?? {})) {
+    document
+      .querySelectorAll<HTMLImageElement>(`img[data-photo="${f.slot}"]`)
+      .forEach((img) => setFraming(img, f));
+  }
+
   for (const c of Object.values(page.colors ?? {})) {
     const el = find(c.ref.selector);
     if (el) setColor(el, c.target, c.value);
@@ -290,6 +296,34 @@ export function setColor(el: HTMLElement, target: ColorTarget, value: ColorValue
     el.style.borderStyle = "solid";
     el.style.borderWidth = "1px";
   }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Framing — which part of a photo shows in its spot                          */
+/* -------------------------------------------------------------------------- */
+
+export type FramingValue = { x: number; y: number; zoom: number };
+
+/** The framing an image is showing now, read back from its inline style
+ *  (SitePhoto writes it there from content/photos.ts). */
+export function readFraming(img: HTMLImageElement): FramingValue {
+  const [x, y] = (img.style.objectPosition || "50% 50%").split(" ").map((v) => parseFloat(v));
+  const zoom = parseFloat(/scale(([d.]+))/.exec(img.style.transform)?.[1] ?? "1");
+  return { x: Number.isFinite(x) ? x : 50, y: Number.isFinite(y) ? y : 50, zoom: zoom || 1 };
+}
+
+export function setFraming(img: HTMLImageElement, f: FramingValue) {
+  // The first change remembers the published framing, so Reset can return to it.
+  if (img.dataset.xochiFraming === undefined) img.dataset.xochiFraming = JSON.stringify(readFraming(img));
+  const at = `${f.x}% ${f.y}%`;
+  img.style.objectPosition = at;
+  img.style.transformOrigin = at;
+  img.style.transform = f.zoom > 1 ? `scale(${f.zoom})` : "";
+}
+
+/** The framing the page was published with, before any edit. */
+export function publishedFraming(img: HTMLImageElement): FramingValue {
+  return img.dataset.xochiFraming ? JSON.parse(img.dataset.xochiFraming) : readFraming(img);
 }
 
 export function setDeleted(el: HTMLElement, deleted: boolean) {

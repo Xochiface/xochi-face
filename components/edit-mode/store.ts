@@ -110,6 +110,10 @@ export type Insert = {
   near: ElementRef | null;
 };
 
+/** Which part of a slot's photo shows (content/photos.ts framing). Keyed by
+ *  slot, since a slot's photo can appear on several pages. */
+export type FramingEdit = { ref: ElementRef; slot: string; x: number; y: number; zoom: number };
+
 /** A photo or video swapped into an image slot. */
 export type MediaEdit = {
   ref: ElementRef;
@@ -143,6 +147,7 @@ export type PageEdits = {
   deleted: Record<string, DeleteEdit>;
   media: Record<string, MediaEdit>;
   colors: Record<string, ColorEdit>;
+  framing: Record<string, FramingEdit>;
   inserts: Insert[];
   notes: Note[];
 };
@@ -156,7 +161,7 @@ const EDITS_KEY = "xochi-edits-v1";
 const EMPTY: EditState = { pages: {}, lastSaved: null };
 
 export function emptyPage(): PageEdits {
-  return { text: {}, moves: {}, size: {}, deleted: {}, media: {}, colors: {}, inserts: [], notes: [] };
+  return { text: {}, moves: {}, size: {}, deleted: {}, media: {}, colors: {}, framing: {}, inserts: [], notes: [] };
 }
 
 let state: EditState = EMPTY;
@@ -231,6 +236,12 @@ export function removeApplied(applied: { page: string; selector: string; kind: s
   for (const a of applied) {
     const p = pages[a.page];
     if (!p) continue;
+    if (a.kind === "framing") {
+      const framing = { ...p.framing };
+      delete framing[a.selector];
+      pages[a.page] = { ...p, framing };
+      continue;
+    }
     if (a.kind === "color") {
       // Colour edits are keyed "selector|target"; the reply carries the key.
       const colors = { ...p.colors };
@@ -270,6 +281,7 @@ export function countChanges(s: EditState): number {
       Object.keys(p.deleted ?? {}).length +
       Object.keys(p.media ?? {}).length +
       Object.keys(p.colors ?? {}).length +
+      Object.keys(p.framing ?? {}).length +
       (p.inserts ?? []).length +
       p.notes.filter((note) => note.text.trim()).length,
     0,

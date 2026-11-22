@@ -20,14 +20,18 @@ import {
   pickAt,
   pickFile,
   plainText,
+  publishedFraming,
+  readFraming,
   resetElement,
   setBodyCursor,
   setColor,
   setDeleted,
+  setFraming,
   setFontPx,
   setTranslate,
   slotOf,
   type Box,
+  type FramingValue,
 } from "./dom";
 import { AddPanel, DEFAULT_WIDTH, InsertItem, type AddChoice } from "./inserts";
 import { classFor, type ColorTarget, type ColorValue } from "./palette";
@@ -103,6 +107,8 @@ function EditTools() {
   const [placing, setPlacing] = useState<Omit<Insert, "id" | "x" | "y" | "near"> | null>(null);
   const [selectedInsert, setSelectedInsert] = useState<string | null>(null);
   const [colorsOpen, setColorsOpen] = useState(false);
+  // Reframe: the photo whose framing is being adjusted.
+  const [reframing, setReframing] = useState<HTMLImageElement | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -307,7 +313,7 @@ function EditTools() {
         const want = needs.width / needs.height;
         const have = data.width / data.height;
         if (Math.abs(have - want) / want > 0.04) {
-          warnings.push("It's a different shape from this spot, so it will be cropped to fit — the preview shows roughly what stays.");
+          warnings.push("It's a different shape from this spot — use ⤢ Reframe to choose which part shows.");
         }
       }
       if (data.kind === "video" && data.bytes > 40 * 1024 * 1024) {
@@ -374,6 +380,33 @@ function EditTools() {
       if (value) colors[key] = { ref, text, target, value };
       else delete colors[key];
       return { ...p, colors };
+    });
+  }
+
+  /* Reframing photos -------------------------------------------------------- */
+
+  /** Show a framing on every copy of the slot's photo, and record it. A
+   *  framing that matches what's published isn't a change. */
+  function frame(img: HTMLImageElement, f: FramingValue) {
+    const slot = img.dataset.photo;
+    if (!slot) return;
+    const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+    const next = {
+      x: Math.round(clamp(f.x, 0, 100)),
+      y: Math.round(clamp(f.y, 0, 100)),
+      zoom: Math.round(clamp(f.zoom, 1, 3) * 100) / 100,
+    };
+    document
+      .querySelectorAll<HTMLImageElement>(`img[data-photo="${slot}"]`)
+      .forEach((i) => setFraming(i, next));
+    const was = publishedFraming(img);
+    const unchanged = was.x === next.x && was.y === next.y && was.zoom === next.zoom;
+    const ref = describe(img);
+    updatePage(pathname, (p) => {
+      const framing = { ...p.framing };
+      if (unchanged) delete framing[slot];
+      else framing[slot] = { ref, slot, ...next };
+      return { ...p, framing };
     });
   }
 
@@ -497,6 +530,7 @@ function EditTools() {
         setPlacing(null);
         setAddOpen(false);
         setColorsOpen(false);
+        setReframing(null);
         setSelection(null);
         setSelectedInsert(null);
         return;
@@ -698,10 +732,24 @@ function EditTools() {
             if (selection.el instanceof HTMLImageElement) replaceMedia(selection.el);
           }}
           onColor={() => setColorsOpen((v) => !v)}
+          onReframe={() => {
+            if (selection.el instanceof HTMLImageElement && selection.el.dataset.photo) {
+              setReframing(selection.el);
+              setSelection(null);
+            }
+          }}
           onClose={() => {
             setSelection(null);
             setColorsOpen(false);
           }}
+        />
+      ) : null}
+
+      {active && reframing ? (
+        <ReframeOverlay
+          img={reframing}
+          onFrame={(f) => frame(reframing, f)}
+          onDone={() => setReframing(null)}
         />
       ) : null}
 
@@ -881,6 +929,7 @@ function EditTools() {
 function SelectionTools({
   selection,
   onColor,
+  onReframe,
   onEditText,
   onDrag,
   onSize,
@@ -894,6 +943,7 @@ function SelectionTools({
   selection: Selection;
   onReplace: () => void;
   onColor: () => void;
+  onReframe: () => void;
   onEditText: () => void;
   onDrag: (e: React.PointerEvent) => void;
   onSize: (delta: number) => void;
@@ -945,6 +995,11 @@ function SelectionTools({
             ⇪ Replace
           </button>
         ) : null}
+        {isImage && el.dataset.photo ? (
+          <button type="button" className={tool} onClick={onReframe} title="Choose which part of the photo shows">
+            ⤢ Reframe
+          </button>
+        ) : null}
         <button
           type="button"
           onPointerDown={onDrag}
@@ -985,6 +1040,104 @@ function SelectionTools({
         </button>
         <button type="button" className={tool} onClick={onClose} aria-label="Deselect">
           ×
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Reframe mode for one photo: drag inside the frame to choose what's centred,
+ * − / + to zoom around it. Every copy of the photo (it may appear on more than
+ * one page) follows along.
+ */
+function ReframeOverlay({
+  img,
+  onFrame,
+  onDone,
+}: {
+  img: HTMLImageElement;
+  onFrame: (f: FramingValue) => void;
+  onDone: () => void;
+}) {
+  const frameEl = img.parentElement ?? img;
+  const [box, setBox] = useState(() => measure(frameEl));
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const update = () => setBox(measure(frameEl));
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [frameEl]);
+
+  const current = readFraming(img);
+  const set = (f: FramingValue) => {
+    onFrame(f);
+    setTick((t) => t + 1);
+  };
+
+  function startDrag(e: React.PointerEvent) {
+    e.preventDefault();
+    const start = readFraming(img);
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const onMove = (ev: PointerEvent) => {
+      // Dragging the photo right reveals more of its left side, so the
+      // centred point moves left. One frame-width of drag ≈ the whole photo.
+      set({
+        ...start,
+        x: start.x - ((ev.clientX - sx) / box.width) * 100,
+        y: start.y - ((ev.clientY - sy) / box.height) * 100,
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  const tool = "font-label rounded-md px-2.5 py-1.5 text-[0.6875rem] text-[#f7f1e2] hover:bg-white/15";
+  const barTop = box.top > 60 ? box.top - 46 : box.top + 10;
+
+  return (
+    <>
+      <div
+        {...ui}
+        onPointerDown={startDrag}
+        className="fixed z-[91] cursor-move touch-none rounded-sm outline outline-2 outline-dashed outline-[#c8a053]"
+        style={{ top: box.top, left: box.left, width: box.width, height: box.height }}
+      />
+      <div
+        {...ui}
+        className="fixed z-[92] flex items-center gap-0.5 rounded-lg bg-[#2c1503] p-1 shadow-lg"
+        style={{ top: barTop, left: Math.max(8, Math.min(box.left, window.innerWidth - 330)) }}
+      >
+        <span className="font-label px-1.5 text-[0.625rem] uppercase text-[#dcbc82]">
+          Drag to reframe
+        </span>
+        <button type="button" className={tool} onClick={() => set({ ...current, zoom: current.zoom - 0.1 })} title="Zoom out">
+          −
+        </button>
+        <span className="font-label w-10 text-center text-[0.6875rem] text-[#f7f1e2]">
+          {Math.round(current.zoom * 100)}%
+        </span>
+        <button type="button" className={tool} onClick={() => set({ ...current, zoom: current.zoom + 0.1 })} title="Zoom in">
+          +
+        </button>
+        <button type="button" className={tool} onClick={() => set({ x: 50, y: 50, zoom: 1 })}>
+          Centre
+        </button>
+        <button type="button" className={tool} onClick={() => set(publishedFraming(img))}>
+          Reset
+        </button>
+        <button type="button" className={`${tool} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82]`} onClick={onDone}>
+          Done
         </button>
       </div>
     </>
@@ -1067,7 +1220,7 @@ type Package = ReturnType<typeof buildPackage>;
 /** What app/api/edits/route.ts says back after publishing. */
 type SaveReply = {
   path: string;
-  applied: { page: string; selector: string; what: string; kind: "text" | "media" | "delete" | "color" }[];
+  applied: { page: string; selector: string; what: string; kind: "text" | "media" | "delete" | "color" | "framing" }[];
   skipped: { page: string; selector: string; what: string; why: string }[];
   commit: string | null;
   commitNote: string | null;
@@ -1104,6 +1257,13 @@ function buildPackage(s: EditState) {
             convertedFromHeic: m.converted,
             warnings: m.warnings,
           })),
+          framing: Object.values(p.framing ?? {}).map((fr) => ({
+            element: fr.ref,
+            slot: fr.slot,
+            x: fr.x,
+            y: fr.y,
+            zoom: fr.zoom,
+          })),
           colors: Object.values(p.colors ?? {}).map((c) => ({
             element: c.ref,
             text: c.text,
@@ -1134,6 +1294,7 @@ function buildPackage(s: EditState) {
           p.deleted.length +
           p.media.length +
           p.colors.length +
+          p.framing.length +
           p.inserts.length +
           p.notes.length,
       ),

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
-import { photoAttrs, photos } from "@/content/photos";
+import { SitePhoto } from "@/components/site/site-photo";
 import {
   benefits,
   letter,
@@ -47,16 +46,11 @@ export default function AboutPage() {
         {/* Nicole ---------------------------------------------------------- */}
         <section className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-32">
           <div className="grid items-center gap-12 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] md:gap-20">
-            <div className="shadow-rest relative overflow-hidden rounded-md">
-              <Image
-                {...photoAttrs("founder")}
-                src={photos.founder.src}
-                alt={photos.founder.alt}
-                placeholder="blur"
-                sizes="(min-width: 768px) 38vw, 90vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <SitePhoto
+              name="founder"
+              sizes="(min-width: 768px) 38vw, 90vw"
+              className="shadow-rest rounded-md"
+            />
 
             <div>
               <h2 className="text-title text-ink">Nicole.</h2>
@@ -189,16 +183,11 @@ export default function AboutPage() {
         {/* What happens at the table -------------------------------------- */}
         <section className="night bg-surface text-ink">
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-32">
-            <div className="shadow-lift relative overflow-hidden rounded-md">
-              <Image
-                {...photoAttrs("stillness")}
-                src={photos.stillness.src}
-                alt={photos.stillness.alt}
-                placeholder="blur"
-                sizes="(min-width: 768px) 44vw, 90vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <SitePhoto
+              name="stillness"
+              sizes="(min-width: 768px) 44vw, 90vw"
+              className="shadow-lift rounded-md"
+            />
 
             <div>
               <p className="label-caps text-ink-soft">What happens</p>

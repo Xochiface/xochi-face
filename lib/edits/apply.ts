@@ -1,9 +1,8 @@
 import { execFile } from "node:child_process";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import sharp from "sharp";
 import ts from "typescript";
 
 /**
@@ -14,8 +13,10 @@ import ts from "typescript";
  *              search-and-replace: the edited wording must match exactly one
  *              string or run of JSX text, so it can't land in the wrong place
  *              or break the syntax around it.
- *   Photos   — cropped to the shape of the slot they replace and written over
- *              its file in assets/photos/.
+ *   Photos   — written whole over the slot's file in assets/photos/; the slot
+ *              shows them centred until reframed.
+ *   Framing  — which part of a slot's photo shows (edit mode's Reframe),
+ *              written into that slot's entry in content/photos.ts.
  *   Deletes  — an element whose words are written in a page, like
  *              <p>Some words</p>, or come from the shared content file, like
  *              <h2>{voice.bloom}</h2>. Anything built from a list (one card
@@ -46,6 +47,7 @@ type PackagePage = {
   textEdits?: { element: Ref; original: string; edited: string }[];
   media?: {
     element: Ref;
+    slot: string | null;
     kind: "image" | "video";
     file: string;
     replaces: string | null;
@@ -53,11 +55,12 @@ type PackagePage = {
   }[];
   deleted?: { element: Ref; text: string }[];
   colors?: { element: Ref; text: string; target: "text" | "fill" | "border"; className: string }[];
+  framing?: { element: Ref; slot: string; x: number; y: number; zoom: number }[];
 };
 
 export type Outcome = { page: string; selector: string; what: string };
 export type ApplyResult = {
-  applied: (Outcome & { kind: "text" | "media" | "delete" | "color" })[];
+  applied: (Outcome & { kind: "text" | "media" | "delete" | "color" | "framing" })[];
   skipped: (Outcome & { why: string })[];
   files: string[];
   commit: string | null;
@@ -157,6 +160,34 @@ export async function applyPackage(pkg: {
     queue(pending, at.file, { start: cls.start, end: cls.end, text: `${q}${classes.join(" ")}${q}`, entries });
   }
 
+  /* Framing ---------------------------------------------------------------- */
+  // A reframe sets the slot's framing; a new photo resets it to centred,
+  // unless the same save also reframes it.
+  const framings = new Map<string, { x: number; y: number; zoom: number; entry: ApplyResult["applied"][number] | null }>();
+  for (const [page, p] of pages) {
+    for (const fr of p.framing ?? []) {
+      const entry = { page, selector: fr.slot, what: `${fr.slot} framing → ${fr.x}% ${fr.y}%, ${Math.round(fr.zoom * 100)}%`, kind: "framing" as const };
+      framings.set(fr.slot, { x: fr.x, y: fr.y, zoom: fr.zoom, entry });
+    }
+  }
+  for (const [, p] of pages) {
+    for (const m of p.media ?? []) {
+      if (m.kind === "image" && m.slot && !framings.has(m.slot)) {
+        framings.set(m.slot, { x: 50, y: 50, zoom: 1, entry: null });
+      }
+    }
+  }
+  const manifest = sources.find((src) => src.file === PHOTOS_FILE);
+  for (const [slot, fr] of framings) {
+    const splice = manifest && framingSplice(manifest.text, slot, fr);
+    if (!splice) {
+      if (fr.entry) result.skipped.push({ ...fr.entry, why: "Couldn't find this photo's entry in content/photos.ts." });
+      continue;
+    }
+    queue(pending, PHOTOS_FILE, { ...splice, entries: fr.entry ? [fr.entry] : [] });
+    if (fr.entry) result.applied.push(fr.entry);
+  }
+
   /* Write source files ---------------------------------------------------- */
   const photoTargets = pages.flatMap(([, p]) =>
     (p.media ?? []).flatMap((m) => (m.replaces ? [m.replaces] : [])),
@@ -200,7 +231,7 @@ export async function applyPackage(pkg: {
         continue;
       }
       try {
-        await cropInto(from, to, m.needs.width / m.needs.height);
+        await copyFile(from, to);
         touched.add(m.replaces!);
         result.applied.push({ page, selector: m.element.selector, what, kind: "media" });
       } catch {
@@ -547,21 +578,40 @@ function safePath(rel: string, folder: string) {
   return path.join(ROOT, clean);
 }
 
-/** The largest crop of the slot's shape the photo allows — never enlarged —
- *  centred on whatever sharp judges the subject. */
-async function cropInto(from: string, to: string, ratio: number) {
-  const meta = await sharp(from).metadata();
-  if (!meta.width || !meta.height) throw new Error("unreadable");
-  let width = meta.width;
-  let height = Math.round(width / ratio);
-  if (height > meta.height) {
-    height = meta.height;
-    width = Math.round(height * ratio);
+const PHOTOS_FILE = "content/photos.ts";
+
+/**
+ * Where to write a slot's framing in content/photos.ts: over its existing
+ * `framing: {…}`, or as a new property after `ratio`. Found with the
+ * TypeScript parser, so it lands inside the right slot's object.
+ */
+function framingSplice(text: string, slot: string, f: { x: number; y: number; zoom: number }) {
+  const sf = ts.createSourceFile(PHOTOS_FILE, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const value = `framing: { x: ${f.x}, y: ${f.y}, zoom: ${f.zoom} }`;
+  for (const stmt of sf.statements) {
+    if (!ts.isVariableStatement(stmt)) continue;
+    for (const decl of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(decl.name) || decl.name.text !== "photos") continue;
+      let init = decl.initializer;
+      while (init && (ts.isSatisfiesExpression(init) || ts.isAsExpression(init) || ts.isParenthesizedExpression(init))) {
+        init = init.expression;
+      }
+      if (!init || !ts.isObjectLiteralExpression(init)) return null;
+      const entry = init.properties.find(
+        (p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p) && p.name.getText(sf) === slot,
+      );
+      if (!entry || !ts.isObjectLiteralExpression(entry.initializer)) return null;
+      const props = entry.initializer.properties;
+      const existing = props.find((p) => ts.isPropertyAssignment(p) && p.name.getText(sf) === "framing");
+      if (existing) return { start: existing.getStart(sf), end: existing.getEnd(), text: value };
+      const ratio = props.find((p) => ts.isPropertyAssignment(p) && p.name.getText(sf) === "ratio");
+      if (!ratio) return null;
+      const at = text.indexOf(",", ratio.getEnd()) + 1;
+      const indent = text.slice(text.lastIndexOf("\n", ratio.getStart(sf)) + 1, ratio.getStart(sf));
+      return { start: at, end: at, text: `\n${indent}${value},` };
+    }
   }
-  await sharp(from)
-    .resize(width, height, { fit: "cover", position: sharp.strategy.attention })
-    .jpeg({ quality: 86, mozjpeg: true })
-    .toFile(to);
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */

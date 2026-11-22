@@ -1,11 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
 import { AddOnRow } from "@/components/site/add-on-row";
+import { SitePhoto } from "@/components/site/site-photo";
 import { serviceBookingUrl } from "@/content/booking";
-import { photoAttrs, photos } from "@/content/photos";
 import {
   anatomy,
   etymology,
@@ -32,16 +31,7 @@ export default function HomePage() {
           already portrait, so it runs full-bleed behind the type.
         */}
         <div className="absolute inset-0 md:left-[56%]">
-          <Image
-            {...photoAttrs("hero")}
-            src={photos.hero.src}
-            alt={photos.hero.alt}
-            fill
-            priority
-            placeholder="blur"
-            sizes="(min-width: 768px) 50vw, 100vw"
-            className="object-cover object-[62%_center]"
-          />
+          <SitePhoto name="hero" fill priority sizes="(min-width: 768px) 50vw, 100vw" />
           {/* Mobile: type sits over the image, so it needs a real scrim. */}
           <div
             aria-hidden="true"
@@ -160,16 +150,11 @@ export default function HomePage() {
         {/* -------------------------------------------------------------- */}
         <section>
           <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-24 md:grid-cols-2 md:gap-20 md:px-10 md:py-36">
-            <div className="shadow-rest relative overflow-hidden rounded-md">
-              <Image
-                {...photoAttrs("stillLife")}
-                src={photos.stillLife.src}
-                alt={photos.stillLife.alt}
-                placeholder="blur"
-                sizes="(min-width: 768px) 44vw, 90vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <SitePhoto
+              name="stillLife"
+              sizes="(min-width: 768px) 44vw, 90vw"
+              className="shadow-rest rounded-md"
+            />
 
             <blockquote>
               <p className="text-quote font-poetic text-ink font-light italic">
@@ -212,16 +197,11 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="shadow-lift relative overflow-hidden rounded-md">
-              <Image
-                {...photoAttrs("stillness")}
-                src={photos.stillness.src}
-                alt={photos.stillness.alt}
-                placeholder="blur"
-                sizes="(min-width: 768px) 44vw, 90vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <SitePhoto
+              name="stillness"
+              sizes="(min-width: 768px) 44vw, 90vw"
+              className="shadow-lift rounded-md"
+            />
           </div>
         </section>
 
@@ -230,16 +210,11 @@ export default function HomePage() {
         {/* -------------------------------------------------------------- */}
         <section className="mx-auto max-w-7xl px-5 py-24 md:px-10 md:py-36">
           <div className="grid items-center gap-12 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] md:gap-20">
-            <div className="shadow-rest relative overflow-hidden rounded-md">
-              <Image
-                {...photoAttrs("founder")}
-                src={photos.founder.src}
-                alt={photos.founder.alt}
-                placeholder="blur"
-                sizes="(min-width: 768px) 38vw, 90vw"
-                className="h-full w-full object-cover"
-              />
-            </div>
+            <SitePhoto
+              name="founder"
+              sizes="(min-width: 768px) 38vw, 90vw"
+              className="shadow-rest rounded-md"
+            />
 
             <div>
               <p className="label-caps text-ink-soft">{letter.eyebrow}</p>

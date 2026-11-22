@@ -27,11 +27,31 @@ export type Photo = {
   ratio: string;
   brief: string;
   placeholder: boolean;
+  /**
+   * Which part of the photo shows in its spot. x/y are the point to keep
+   * centred, in percent across and down the photo; zoom ≥ 1 enlarges around
+   * that point. Set from edit mode's Reframe; centred and unzoomed if absent.
+   */
+  framing?: Framing;
 };
+
+export type Framing = { x: number; y: number; zoom: number };
+
+export const CENTRED: Framing = { x: 50, y: 50, zoom: 1 };
+
+/** CSS for a framing, for an <img> that fills its frame with object-fit: cover. */
+export function framingStyle(f: Framing = CENTRED) {
+  const at = `${f.x}% ${f.y}%`;
+  return {
+    objectPosition: at,
+    ...(f.zoom > 1 ? { transform: `scale(${f.zoom})`, transformOrigin: at } : {}),
+  };
+}
 
 export const photos = {
   hero: {
     src: hero,
+    framing: { x: 62, y: 50, zoom: 1 },
     alt: "A woman resting with her eyes closed in warm, low afternoon light.",
     ratio: "3 / 4",
     brief:
@@ -95,5 +115,6 @@ export function photoAttrs(name: PhotoName) {
     "data-photo": name,
     "data-photo-file": `assets/photos/${photoFiles[name]}`,
     "data-photo-min": `${width}x${height}`,
+    "data-photo-ratio": photos[name].ratio,
   };
 }
