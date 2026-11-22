@@ -59,8 +59,7 @@ export default function AboutPage() {
             </div>
 
             <div>
-              <p className="label-caps text-ink-soft">{letter.role}</p>
-              <h2 className="text-title text-ink mt-5">Nicole.</h2>
+              <h2 className="text-title text-ink">Nicole.</h2>
               <p className="label-caps text-ink-soft mt-3">
                 {site.credential} · {site.location}
               </p>

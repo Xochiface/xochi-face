@@ -21,7 +21,6 @@ import {
   pickFile,
   plainText,
   resetElement,
-  restoreMedia,
   setBodyCursor,
   setColor,
   setDeleted,
@@ -573,7 +572,9 @@ function EditTools() {
       const el = find(a.selector);
       if (!el) continue;
       if (a.kind === "text") markOriginal(el, null);
-      if (a.kind === "media" && el instanceof HTMLImageElement) restoreMedia(el);
+      // A published photo keeps showing its upload until the page reloads:
+      // putting the old src back would flash the old photo, which looked
+      // like the swap had failed.
     }
     removeApplied(reply.applied);
     markSaved(reply.path);

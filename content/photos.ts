@@ -56,11 +56,12 @@ export const photos = {
   },
   founder: {
     src: founder,
-    alt: "Portrait of a woman in warm ochre light.",
+    alt: "Nicole, seated at a café table beside a tall arrangement of roses.",
     ratio: "4 / 5",
     brief:
       "Vertical 4:5. Nicole, calm and direct to camera, warm ground behind her — ochre, clay, or bone wall. Natural light. Not a headshot: shoulders in, room around her. This sits beside the letter and needs to feel like a person, not a business.",
-    placeholder: true,
+    // Nicole's own photo, swapped in from edit mode on 2026-11-21.
+    placeholder: false,
   },
   garden: {
     src: garden,
