@@ -27,9 +27,9 @@ import ts from "typescript";
  * Everything else — moves, size changes, video, notes, added items, and anything that
  * didn't match exactly once — stays in the package for a developer, and the
  * result says so. Touched files are committed, so every save can be undone,
- * unless they already held someone's uncommitted work — and the commit is
- * pushed to GitHub, which makes Cloudflare rebuild the live site (about two
- * minutes).
+ * unless they already held someone's uncommitted work. Saving only changes
+ * this computer (the preview); "Publish live" pushes to GitHub, which makes
+ * Cloudflare rebuild xochiface.com (see app/api/edits/publish).
  *
  * Development only: the caller (app/api/edits/route.ts) never runs this in
  * production.
@@ -79,7 +79,9 @@ export async function applyPackage(pkg: {
   for (const [page, p] of pages) {
     for (const edit of p.textEdits ?? []) {
       const what = `“${clip(edit.original)}” → “${clip(edit.edited)}”`;
-      const edited = edit.edited.trim();
+      // Phones' editors type non-breaking spaces and leave doubled spaces
+      // where words were deleted; neither belongs in the copy.
+      const edited = edit.edited.replace(/ /g, " ").replace(/ {2,}/g, " ").trim();
       if (!edited) {
         result.skipped.push({ page, selector: edit.element.selector, what, why: "Left empty — use Delete to remove something." });
         continue;
@@ -221,11 +223,6 @@ export async function applyPackage(pkg: {
         await run("git", ["commit", "-m", `Edit mode: ${summary}`, "--", ...files], { cwd: ROOT });
         const { stdout } = await run("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT });
         result.commit = stdout.trim();
-        result.pushed = await push();
-        if (!result.pushed) {
-          result.commitNote =
-            "Saved on this computer, but couldn't reach GitHub, so the live site hasn't updated yet — tell Claude.";
-        }
       } catch {
         result.commitNote = "Published, but the commit failed — the files are changed but not yet committed.";
       }
@@ -587,8 +584,8 @@ async function dirty(files: string[]) {
 }
 
 /** Sends the branch to GitHub (origin), never prompting: a sign-in window
- *  can't be answered from inside a save. Cloudflare deploys main. */
-async function push() {
+ *  can't be answered from inside a request. Cloudflare deploys main. */
+export async function push() {
   try {
     await run("git", ["push", "origin", "HEAD:main"], {
       cwd: ROOT,
@@ -598,6 +595,16 @@ async function push() {
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Saved commits not yet on the live site (ahead of the last push to main). */
+export async function unpublished() {
+  try {
+    const { stdout } = await run("git", ["rev-list", "--count", "origin/main..HEAD"], { cwd: ROOT });
+    return Number(stdout.trim()) || 0;
+  } catch {
+    return 0;
   }
 }
 

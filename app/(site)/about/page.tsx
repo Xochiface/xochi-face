@@ -6,7 +6,6 @@ import { PortraitMark } from "@/components/brand/logo";
 import { BorderStrip, Ornament } from "@/components/brand/ornament";
 import { photoAttrs, photos } from "@/content/photos";
 import {
-  anatomy,
   benefits,
   letter,
   philosophy,
@@ -120,16 +119,9 @@ export default function AboutPage() {
 
             <p className="text-lead text-ink-muted italic">{letter.closing[0]}</p>
 
-            {/* The anatomy list, plainly named — specificity is the warmth. */}
-            <ul className="text-ink-soft my-14 flex flex-wrap justify-center gap-x-10 gap-y-5">
-              {anatomy.map((part) => (
-                <li key={part} className="font-poetic text-2xl italic">
-                  {part}
-                </li>
-              ))}
-            </ul>
-
-            <p className="text-lead text-ink-muted italic">{letter.closing[1]}</p>
+            <p className="text-lead text-ink-muted mt-16 italic">
+              {letter.closing[1]}
+            </p>
 
             <footer className="mt-16">
               <p className="font-poetic text-ink-soft text-xl italic">

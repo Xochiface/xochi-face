@@ -107,6 +107,9 @@ function EditTools() {
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Saved changes on this computer that xochiface.com doesn't have yet.
+  const [unpublished, setUnpublished] = useState(0);
+  const [publishing, setPublishing] = useState(false);
   // A straight-line guide while Shift-dragging: which way, and where.
   const [guide, setGuide] = useState<{ axis: "x" | "y"; at: number } | null>(null);
 
@@ -582,15 +585,45 @@ function EditTools() {
     const waiting = pkg.changeCount - published;
     const parts = [
       published
-        ? reply.pushed
-          ? `Published ${published} change${published > 1 ? "s" : ""} — live on xochiface.com in about 2 minutes.`
-          : `Published ${published} change${published > 1 ? "s" : ""} on this computer.`
-        : "Nothing could be published automatically.",
+        ? `Saved ${published} change${published > 1 ? "s" : ""} to the preview. Press Publish live when you're ready.`
+        : "Nothing could be applied automatically.",
       waiting ? `${waiting} more saved for Claude to apply.` : "",
       reply.commitNote ?? "",
     ];
     flash(parts.filter(Boolean).join(" "), 10000);
+    void refreshUnpublished();
   }
+
+  /* Publishing --------------------------------------------------------- */
+
+  async function refreshUnpublished() {
+    try {
+      const res = await fetch("/api/edits/publish");
+      if (res.ok) setUnpublished((await res.json()).unpublished ?? 0);
+    } catch {
+      /* not running locally — there's nothing to publish from here */
+    }
+  }
+
+  async function publish() {
+    setPublishing(true);
+    try {
+      const res = await fetch("/api/edits/publish", { method: "POST" });
+      const data = await res.json();
+      if (data.pushed) {
+        setUnpublished(0);
+        flash("Publishing — live on xochiface.com in about 2 minutes.", 8000);
+      } else {
+        flash("Couldn't reach GitHub, so nothing went live. Check the connection, or tell Claude.", 9000);
+      }
+    } catch {
+      flash("Publishing only works while running the site on this computer.", 8000);
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  useEffect(() => void refreshUnpublished(), [active]);
 
   function discard() {
     if (!confirmDiscard) {
@@ -785,7 +818,19 @@ function EditTools() {
                 {placingNote ? "Click to place note" : "+ Note"}
               </button>
 
-              {Object.keys(page?.deleted ?? {}).length ? (
+              {unpublished ? (
+              <button
+                type="button"
+                disabled={publishing}
+                onClick={publish}
+                className={`${btn} bg-[#6b7c4a] text-[#f7f1e2] hover:bg-[#7d8f58] disabled:opacity-50`}
+                title="Send saved changes to xochiface.com"
+              >
+                {publishing ? "Publishing…" : `Publish live (${unpublished})`}
+              </button>
+            ) : null}
+
+            {Object.keys(page?.deleted ?? {}).length ? (
                 <button type="button" onClick={undoDelete} className={`${btn} hover:bg-white/10`}>
                   ↺ Undo delete
                 </button>
@@ -797,7 +842,7 @@ function EditTools() {
                 onClick={save}
                 className={`${btn} bg-[#c8a053] text-[#2c1503] hover:bg-[#dcbc82] disabled:opacity-40`}
               >
-                {saving ? "Publishing…" : `Save changes${changes ? ` (${changes})` : ""}`}
+                {saving ? "Saving…" : `Save changes${changes ? ` (${changes})` : ""}`}
               </button>
 
               <button
