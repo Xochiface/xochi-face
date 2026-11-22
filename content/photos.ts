@@ -78,6 +78,7 @@ export const photos = {
     src: founder,
     alt: "Nicole, seated at a café table beside a tall arrangement of roses.",
     ratio: "4 / 5",
+    framing: { x: 49, y: 68, zoom: 1.3 },
     brief:
       "Vertical 4:5. Nicole, calm and direct to camera, warm ground behind her — ochre, clay, or bone wall. Natural light. Not a headshot: shoulders in, room around her. This sits beside the letter and needs to feel like a person, not a business.",
     // Nicole's own photo, swapped in from edit mode on 2026-11-21.
