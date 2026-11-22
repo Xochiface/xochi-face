@@ -327,7 +327,7 @@ export const letter = {
   ],
   pullQuote: "The table is set before you walk in the door.",
   closing: [
-    "I know it might sound a little crazy, but it's interesting how our face is one of the greatest representatives of our emotions. Our lips, eyes, forehead, nose, cheekbones, and chin all tell stories.",
+    "I know it might sound a little crazy, but  our face is one of the greatest representatives of the way we live day to day. Our lips, eyes, forehead, nose, cheekbones, and chin all tell stories.",
     "Our face holds more tension than we realize — and many people don't notice it until they feel it begin to release. Sometimes the glow starts with releasing what you've been carrying.",
   ],
   valediction: "with care,",
